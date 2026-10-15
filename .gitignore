@@ -1,0 +1,11 @@
+.env
+.env.*
+*.local
+*.key
+*.pem
+*.p12
+*.pfx
+*.log
+node_modules/
+.venv/
+__pycache__/
