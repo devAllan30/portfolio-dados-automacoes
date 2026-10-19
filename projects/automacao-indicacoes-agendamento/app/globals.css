@@ -1,0 +1,1000 @@
+@import "tailwindcss";
+
+:root {
+  --azul-noite: #16002e;
+  --azul: #632f88;
+  --azul-claro: #f4ecfb;
+  --turquesa: #7b3fa2;
+  --verde: #4e246a;
+  --texto: #2c183a;
+  --texto-suave: #75657f;
+  --borda: #e8ddef;
+  --fundo: #f8f5fa;
+  --branco: #ffffff;
+  --erro: #c34242;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--fundo);
+}
+
+body {
+  margin: 0;
+  color: var(--texto);
+  background: var(--fundo);
+  font-family: var(--fonte-principal), Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.pagina-formulario {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 6% 4%, rgba(99, 47, 136, 0.16), transparent 30rem),
+    linear-gradient(180deg, #fdfbfe 0%, #f5eff9 100%);
+}
+
+.fundo-decorativo {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+.fundo-um {
+  width: 22rem;
+  height: 22rem;
+  top: 12rem;
+  right: -10rem;
+  border: 4rem solid rgba(99, 47, 136, 0.06);
+}
+
+.fundo-dois {
+  width: 14rem;
+  height: 14rem;
+  bottom: 4rem;
+  left: -8rem;
+  background: rgba(99, 47, 136, 0.07);
+}
+
+.conteudo-formulario {
+  width: min(100% - 2rem, 68rem);
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.cabecalho {
+  min-height: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(22, 0, 46, 0.09);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.simbolo-marca {
+  width: 2.55rem;
+  height: 2.55rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.75rem 0.75rem 0.75rem 0.2rem;
+  color: var(--branco);
+  background: linear-gradient(145deg, var(--turquesa), var(--azul));
+  font-weight: 700;
+  font-size: 1.25rem;
+  box-shadow: 0 0.5rem 1.4rem rgba(99, 47, 136, 0.22);
+}
+
+.marca div {
+  display: flex;
+  flex-direction: column;
+}
+
+.marca strong {
+  color: var(--azul-noite);
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+}
+
+.marca div span {
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+}
+
+.selo-seguro,
+.status-contexto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--verde);
+  background: rgba(16, 135, 107, 0.08);
+  border: 1px solid rgba(16, 135, 107, 0.16);
+  border-radius: 999px;
+  padding: 0.48rem 0.75rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.selo-seguro::before,
+.status-contexto::before {
+  content: "";
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--verde);
+}
+
+.introducao {
+  max-width: 46rem;
+  padding: 2.8rem 0 1.8rem;
+}
+
+.etiqueta {
+  color: var(--azul);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.introducao p {
+  margin: 0.7rem 0 0;
+  max-width: 39rem;
+  color: var(--texto-suave);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.cartao-formulario {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(99, 47, 136, 0.14);
+  border-radius: 1.25rem;
+  padding: clamp(1.25rem, 4vw, 2.3rem);
+  box-shadow: 0 1.4rem 4rem rgba(22, 0, 46, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.topo-cartao,
+.topo-cartao > div {
+  display: flex;
+  align-items: center;
+}
+
+.topo-cartao {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topo-cartao > div {
+  gap: 0.85rem;
+}
+
+.numero-etapa {
+  width: 2.7rem;
+  height: 2.7rem;
+  display: grid;
+  place-items: center;
+  color: var(--branco);
+  background: var(--azul-noite);
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.topo-cartao h2 {
+  margin: 0 0 0.2rem;
+  color: var(--azul-noite);
+  font-size: 1.25rem;
+  letter-spacing: -0.025em;
+}
+
+.topo-cartao p {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+}
+
+.contexto-indicacao {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-top: 1.8rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #faf7fc, #f4ecfb);
+  border: 1px solid #e5d5ef;
+  border-radius: 0.9rem;
+}
+
+.contexto-indicacao label,
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.contexto-indicacao label > span,
+.campo > span {
+  color: #4e6471;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.contexto-indicacao input {
+  width: 100%;
+  color: var(--azul-noite);
+  background: transparent;
+  border: 0;
+  padding: 0.15rem 0;
+  outline: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.divisor {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 2rem 0 1.25rem;
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.divisor::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--borda);
+}
+
+.campos-editaveis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.15rem;
+}
+
+.formulario-indicacao-grupo {
+  display: block;
+}
+
+.bloco-contato-principal {
+  padding: 1.15rem;
+  background: linear-gradient(145deg, #f8fbfc, #f3f8f9);
+  border: 1px solid #dce8eb;
+  border-radius: 1rem;
+}
+
+.divisor-empresas {
+  margin-top: 2.25rem;
+}
+
+.divisor-observacao-geral {
+  margin-top: 2rem;
+}
+
+.campo-observacao-geral {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.15rem;
+  background: linear-gradient(145deg, #faf7fc, #f6f1f9);
+  border: 1px solid #e6daec;
+  border-radius: 1rem;
+}
+
+.lista-empresas-formulario,
+.lista-resumo-empresas {
+  display: grid;
+  gap: 1rem;
+}
+
+.cartao-empresa-formulario,
+.resumo-empresa {
+  padding: 1.15rem;
+  background: #fbfcfd;
+  border: 1px solid #dce6e9;
+  border-radius: 1rem;
+}
+
+.cartao-empresa-formulario {
+  padding: 0.95rem;
+}
+
+.cartao-empresa-formulario .campos-editaveis {
+  gap: 0.75rem 0.9rem;
+}
+
+.cartao-empresa-formulario .campo {
+  gap: 0.35rem;
+}
+
+.cartao-empresa-formulario .campo input,
+.cartao-empresa-formulario .campo select {
+  min-height: 2.85rem;
+  padding: 0 0.75rem;
+}
+
+.cabecalho-empresa-formulario,
+.resumo-empresa > header,
+.cabecalho-empresa-formulario > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.cabecalho-empresa-formulario {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid #e1eaed;
+}
+
+.cabecalho-empresa-formulario > div {
+  justify-content: flex-start;
+}
+
+.cabecalho-empresa-formulario strong,
+.cabecalho-empresa-formulario small {
+  display: block;
+}
+
+.cabecalho-empresa-formulario strong {
+  color: var(--azul-noite);
+}
+
+.cabecalho-empresa-formulario small {
+  margin-top: 0.15rem;
+  color: var(--texto-suave);
+}
+
+.numero-empresa {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--branco);
+  background: linear-gradient(135deg, var(--azul), var(--turquesa));
+  border-radius: 50%;
+  font-weight: 750;
+}
+
+.botao-remover-empresa,
+.botao-adicionar-empresa {
+  border-radius: 0.7rem;
+  cursor: pointer;
+  font-weight: 700;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.botao-remover-empresa {
+  min-height: 2.35rem;
+  padding: 0 0.8rem;
+  color: #842f3b;
+  background: #fff7f8;
+  border: 1px solid #efcbd0;
+}
+
+.botao-remover-empresa:hover {
+  background: #fff0f2;
+  border-color: #dc9da6;
+}
+
+.acao-adicionar-empresa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.acao-adicionar-empresa small {
+  color: var(--texto-suave);
+}
+
+.botao-adicionar-empresa {
+  min-height: 2.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 1rem;
+  color: var(--azul);
+  background: #f5eff9;
+  border: 1px dashed #a98abc;
+}
+
+.botao-adicionar-empresa > span {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.botao-adicionar-empresa:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #eee3f5;
+}
+
+.botao-adicionar-empresa:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.formulario-indicacao-grupo > .mensagem-erro,
+.formulario-indicacao-grupo > .rodape-formulario {
+  margin-top: 1.25rem;
+}
+
+.campo-largo {
+  grid-column: 1 / -1;
+}
+
+.campo b {
+  color: var(--erro);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  min-height: 3.15rem;
+  color: var(--texto);
+  background: var(--branco);
+  border: 1px solid #cfdde2;
+  border-radius: 0.7rem;
+  padding: 0 0.9rem;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.campo textarea {
+  min-height: 7rem;
+  padding: 0.85rem 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.campo small {
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.grupo-emails-participantes,
+.linha-email-participante label {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.grupo-emails-participantes {
+  gap: 0.75rem;
+}
+
+.linha-email-participante {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.linha-email-participante label > span {
+  color: var(--texto);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.botao-remover-email,
+.botao-adicionar-email {
+  min-height: 3.15rem;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.botao-remover-email {
+  padding: 0 0.9rem;
+  color: #842f3b;
+  background: #fff7f8;
+  border: 1px solid #efcbd0;
+}
+
+.acao-adicionar-email {
+  display: grid;
+  grid-template-columns: auto 9rem;
+  align-items: end;
+  justify-content: start;
+  gap: 0.85rem;
+}
+
+.quantidade-clientes-inline {
+  width: 9rem;
+}
+
+.acao-adicionar-email > small {
+  grid-column: 1 / -1;
+}
+
+.botao-adicionar-email {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0 1rem;
+  color: var(--azul);
+  background: #f5eff9;
+  border: 1px dashed #a98abc;
+}
+
+.botao-adicionar-email > span {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.botao-adicionar-email:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 620px) {
+  .linha-email-participante {
+    grid-template-columns: 1fr;
+  }
+
+  .botao-remover-email {
+    justify-self: start;
+  }
+
+  .acao-adicionar-email {
+    grid-template-columns: 1fr;
+  }
+
+  .acao-adicionar-email > small {
+    grid-column: 1;
+  }
+
+  .botao-adicionar-email {
+    justify-self: start;
+  }
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+  color: #9aabb4;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  border-color: var(--turquesa);
+  box-shadow: 0 0 0 3px rgba(99, 47, 136, 0.14);
+}
+
+.rodape-formulario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 0.65rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--borda);
+}
+
+.rodape-formulario-direita {
+  justify-content: flex-end;
+}
+
+.rodape-formulario p {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.rodape-formulario button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 3.15rem;
+  flex: 0 0 auto;
+  color: var(--branco);
+  background: linear-gradient(135deg, var(--azul), var(--turquesa));
+  border: 0;
+  border-radius: 0.72rem;
+  padding: 0 1.25rem;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 0.7rem 1.5rem rgba(99, 47, 136, 0.24);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.rodape-formulario button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0.9rem 1.7rem rgba(99, 47, 136, 0.29);
+}
+
+.rodape-formulario button:focus-visible {
+  outline: 3px solid rgba(99, 47, 136, 0.28);
+  outline-offset: 3px;
+}
+
+.rodape-formulario button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+  box-shadow: none;
+}
+
+.mensagem-sucesso,
+.mensagem-erro {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border-radius: 0.8rem;
+  padding: 0.9rem 1rem;
+}
+
+.mensagem-sucesso {
+  color: #145c4d;
+  background: #eaf8f3;
+  border: 1px solid #bfe6d7;
+}
+
+.mensagem-erro {
+  color: #842f3b;
+  background: #fff2f3;
+  border: 1px solid #f0c4ca;
+}
+
+.mensagem-sucesso > span,
+.mensagem-erro > span {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--branco);
+  background: var(--verde);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.mensagem-erro > span {
+  background: var(--erro);
+}
+
+.mensagem-sucesso strong,
+.mensagem-sucesso p,
+.mensagem-erro strong,
+.mensagem-erro p {
+  margin: 0;
+}
+
+.mensagem-sucesso p,
+.mensagem-erro p {
+  margin-top: 0.12rem;
+  font-size: 0.77rem;
+}
+
+.mensagem-erro ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.77rem;
+}
+
+.mensagem-erro li + li {
+  margin-top: 0.2rem;
+}
+
+.rodape-pagina {
+  min-height: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+}
+
+.pagina-centralizada {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: linear-gradient(145deg, #fdfbfe, #f1e8f7);
+}
+
+.aviso-link {
+  width: min(100%, 38rem);
+  text-align: center;
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 1.2rem;
+  padding: clamp(1.5rem, 6vw, 3rem);
+  box-shadow: 0 1.5rem 4rem rgba(22, 0, 46, 0.1);
+}
+
+.marca-texto {
+  color: var(--azul);
+  font-weight: 700;
+}
+
+.icone-aviso {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  margin: 1.5rem auto 1rem;
+  color: var(--azul);
+  background: var(--azul-claro);
+  border-radius: 50%;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.aviso-link h1 {
+  margin: 0;
+  color: var(--azul-noite);
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+}
+
+.aviso-link p {
+  color: var(--texto-suave);
+  line-height: 1.6;
+}
+
+.formato-link {
+  margin-top: 1.4rem;
+  padding: 0.9rem;
+  overflow-wrap: anywhere;
+  color: #45606e;
+  background: var(--fundo);
+  border-radius: 0.7rem;
+  font-size: 0.8rem;
+}
+
+.pagina-agradecimento {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(21, 157, 126, 0.15), transparent 28rem),
+    radial-gradient(circle at 92% 82%, rgba(87, 34, 121, 0.14), transparent 30rem),
+    var(--fundo);
+}
+
+.cartao-agradecimento {
+  width: min(100%, 58rem);
+  padding: clamp(1.35rem, 4vw, 3rem);
+  color: var(--texto);
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 1.4rem;
+  box-shadow: 0 1.5rem 4rem rgba(22, 0, 46, 0.1);
+}
+
+.cabecalho-agradecimento {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.icone-sucesso-grande {
+  width: 4.2rem;
+  height: 4.2rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.2rem;
+  color: var(--branco);
+  background: var(--verde);
+  border-radius: 50%;
+  box-shadow: 0 0.8rem 2rem rgba(21, 157, 126, 0.25);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.cartao-agradecimento h1 {
+  margin: 0.8rem 0 0;
+  color: var(--azul-noite);
+  font-size: clamp(1.8rem, 5vw, 3rem);
+}
+
+.texto-agradecimento,
+.titulo-resumo p,
+.acoes-agradecimento p,
+.resumo-indisponivel p {
+  color: var(--texto-suave);
+  line-height: 1.6;
+}
+
+.titulo-resumo {
+  margin-top: 2.2rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--borda);
+}
+
+.titulo-resumo h2,
+.titulo-resumo p {
+  margin: 0;
+}
+
+.titulo-resumo p {
+  margin-top: 0.25rem;
+}
+
+.resumo-indicacao {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 1.3rem 0 0;
+}
+
+.lista-resumo-empresas {
+  margin-top: 1.3rem;
+}
+
+.resumo-empresa > header {
+  margin-bottom: 0.85rem;
+}
+
+.resumo-empresa .resumo-indicacao {
+  margin-top: 0;
+}
+
+.status-sucesso,
+.status-erro {
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.status-sucesso {
+  color: #145c4d;
+  background: #eaf8f3;
+}
+
+.status-erro {
+  color: #842f3b;
+  background: #fff0f2;
+}
+
+.item-resumo {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  background: #f7fafb;
+  border: 1px solid #e1eaed;
+  border-radius: 0.8rem;
+}
+
+.item-resumo dt {
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.item-resumo dd {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+  color: var(--azul-noite);
+  font-weight: 650;
+}
+
+.acoes-agradecimento {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.resumo-indisponivel {
+  text-align: center;
+}
+
+@media print {
+  .pagina-agradecimento {
+    display: block;
+    padding: 0;
+    background: var(--branco);
+  }
+
+  .cartao-agradecimento {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+}
+
+@media (max-width: 700px) {
+  .conteudo-formulario {
+    width: min(100% - 1.2rem, 68rem);
+  }
+
+  .cabecalho {
+    min-height: 4.8rem;
+  }
+
+  .selo-seguro {
+    display: none;
+  }
+
+  .introducao {
+    padding: 2.5rem 0 1.5rem;
+  }
+
+  .topo-cartao {
+    align-items: flex-start;
+  }
+
+  .status-contexto {
+    display: none;
+  }
+
+  .contexto-indicacao,
+  .campos-editaveis {
+    grid-template-columns: 1fr;
+  }
+
+  .campo-largo {
+    grid-column: auto;
+  }
+
+  .contexto-indicacao {
+    gap: 1rem;
+  }
+
+  .contexto-indicacao label + label {
+    padding-top: 0.75rem;
+    border-top: 1px solid #d9e7ea;
+  }
+
+  .rodape-formulario,
+  .rodape-pagina,
+  .acao-adicionar-empresa {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cabecalho-empresa-formulario {
+    align-items: flex-start;
+  }
+
+  .rodape-formulario button {
+    width: 100%;
+  }
+
+  .rodape-pagina {
+    justify-content: center;
+    text-align: center;
+    padding: 1.4rem 0;
+  }
+
+  .resumo-indicacao {
+    grid-template-columns: 1fr;
+  }
+}

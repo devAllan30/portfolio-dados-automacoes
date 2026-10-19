@@ -11,6 +11,8 @@ Este portfólio apresenta problemas, decisões e resultados em nível profission
 | [Gerenciador de Eventos](cases/gerenciador-de-eventos.md) | Captação de leads em papel, sorteio manual e transcrição posterior | Cadastro por QR Code, dados estruturados, relatórios e sorteios digitais |
 | [Automação de Indicações e Agendamento Comercial](cases/formulario-indicacao-interna.md) | Cadastro manual, distribuição de responsáveis e conflitos de agenda | Fluxos B2C e B2B integrados com banco de dados, RD Station, Google Agenda e Meet |
 
+Código público sanitizado: [automação de indicações e agendamento](projects/automacao-indicacoes-agendamento/).
+
 ## Competências demonstradas
 
 - mapeamento e melhoria de processos;

@@ -74,6 +74,14 @@ modelagem de banco de dados, validação de regras de negócio, sincronização 
 sistemas, tratamento de erros, segurança de credenciais, testes e implantação
 em servidor.
 
+## Código público
+
+Uma versão sanitizada do projeto, sem tokens, senhas, chaves privadas, IPs,
+caminhos de servidor ou identificadores internos de produção, está disponível
+em [`projects/automacao-indicacoes-agendamento`](../projects/automacao-indicacoes-agendamento/).
+
 ## Confidencialidade
 
-Este estudo de caso apresenta somente a visão funcional. Código proprietário, dados pessoais, IDs internos, tokens, credenciais e regras comerciais específicas não são publicados.
+O código publicado utiliza placeholders e configuração por variáveis de
+ambiente. Dados pessoais, IDs internos de produção, tokens, credenciais e
+regras comerciais confidenciais não são publicados.
