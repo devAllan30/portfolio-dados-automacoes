@@ -9,7 +9,7 @@ Este portfólio apresenta problemas, decisões e resultados em nível profission
 | Projeto | Desafio | Resultado principal |
 |---|---|---|
 | [Gerenciador de Eventos](cases/gerenciador-de-eventos.md) | Captação de leads em papel, sorteio manual e transcrição posterior | Cadastro por QR Code, dados estruturados, relatórios e sorteios digitais |
-| [Formulário de Indicação Interna](cases/formulario-indicacao-interna.md) | Planilhas e cadastro manual de negociações no CRM | Fluxo integrado com banco de dados, RD Station e Google Calendar |
+| [Automação de Indicações e Agendamento Comercial](cases/formulario-indicacao-interna.md) | Cadastro manual, distribuição de responsáveis e conflitos de agenda | Fluxos B2C e B2B integrados com banco de dados, RD Station, Google Agenda e Meet |
 
 ## Competências demonstradas
 
