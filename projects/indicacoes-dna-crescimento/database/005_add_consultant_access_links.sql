@@ -1,0 +1,4 @@
+ALTER TABLE consultores_indicacao
+  ADD COLUMN Ativo TINYINT(1) NOT NULL DEFAULT 1 AFTER nome,
+  ADD COLUMN Tipo VARCHAR(20) NOT NULL DEFAULT 'Cadastrado' AFTER Ativo,
+  ADD COLUMN link_referencia VARCHAR(500) NOT NULL DEFAULT '' AFTER Tipo;

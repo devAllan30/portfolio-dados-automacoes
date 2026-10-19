@@ -1,0 +1,5 @@
+ALTER TABLE usuarios_gerenciador
+  DROP PRIMARY KEY,
+  ADD COLUMN Id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
+  ADD PRIMARY KEY (Id),
+  ADD UNIQUE KEY uq_usuarios_gerenciador_login (Login);

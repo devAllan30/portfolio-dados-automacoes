@@ -1,0 +1,16 @@
+[Unit]
+Description=Indicações DNA Crescimento
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/indicacoes
+EnvironmentFile=/var/www/indicacoes/.env.local
+ExecStart=/usr/bin/node scripts/start-production.mjs
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target
