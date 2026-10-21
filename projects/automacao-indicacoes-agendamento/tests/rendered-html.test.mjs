@@ -223,7 +223,7 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
   assert.match(apiIndicacoes, /RD_ETAPA_INDICACAO/);
   assert.match(
     googleCalendar,
-    /Array\.from\(\{ length: 21 \}, \(_, indice\) => \{[\s\S]*?indice \* 30/,
+    /Array\.from\(\{ length: 19 \}, \(_, indice\) => \{[\s\S]*?8 \* 60 \+ 30 \+ indice \* 30/,
   );
   assert.match(
     googleCalendar,
@@ -322,7 +322,15 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
   assert.match(googleCalendar, /calendars\/primary\/events/);
   assert.match(googleCalendar, /sendUpdates=all/);
   assert.match(googleCalendar, /attendees:\s*emailsParticipantes\.map/);
-  assert.match(googleCalendar, /Reunião SST - \$\{dados\.nomeEmpresa\}/);
+  assert.match(
+    googleCalendar,
+    /APRESENTAÇÃO PARCERIA QUALITYSST - \$\{dados\.nomeEmpresa\}/,
+  );
+  assert.match(apiAgendamentos, /Consultor\(a\): \$\{dados\.consultor\}/);
+  assert.ok(
+    apiAgendamentos.match(/\[campoPreVendedor\.slug\]: campoPreVendedor\.valor/g)
+      ?.length >= 1,
+  );
   assert.match(googleCalendar, /meet\.googleapis\.com\/v2\/spaces/);
   assert.match(googleCalendar, /accessType:\s*"OPEN"/);
   assert.match(googleCalendar, /entryPointAccess:\s*"ALL"/);

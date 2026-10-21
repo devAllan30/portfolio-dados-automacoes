@@ -242,12 +242,14 @@ function montarDescricaoEventoGoogle(dados: {
   nomeContato: string;
   telefoneContato: string;
   emailContato: string;
+  consultor: string;
 }) {
   return [
     `Este parceiro: ${dados.nomeEmpresa}`,
     `Contato: ${dados.nomeContato}`,
     `Telefone: ${dados.telefoneContato}`,
     `E-mail: ${dados.emailContato}`,
+    `Consultor(a): ${dados.consultor}`,
   ].join("\n");
 }
 
@@ -590,6 +592,7 @@ export async function POST(requisicao: Request) {
             nomeContato,
             telefoneContato,
             emailContato,
+            consultor,
           }),
           idIndicacao: idIndicacaoCriado,
         });
@@ -718,8 +721,17 @@ export async function POST(requisicao: Request) {
       });
 
       try {
-        const [slugConsultor, opcaoConsultor, slugQuantidadeClientes] =
+        const [
+          campoPreVendedor,
+          slugConsultor,
+          opcaoConsultor,
+          slugQuantidadeClientes,
+        ] =
           await Promise.all([
+            rd.obterOpcaoCampoNegociacao(
+              ID_CAMPO_PRE_VENDEDOR_SSTB2B,
+              OPCAO_PRE_VENDEDOR_ECOSSISTEMA,
+            ),
             rd.obterSlugCampo(ID_CAMPO_CONSULTOR_NEGOCIACAO, "deal"),
             garantirOpcaoCampoConsultor(
               ID_CAMPO_CONSULTOR_NEGOCIACAO,
@@ -738,6 +750,7 @@ export async function POST(requisicao: Request) {
           idResponsavel,
           idCampanha: ID_CAMPANHA_AGENDAMENTO,
           camposPersonalizados: {
+            [campoPreVendedor.slug]: campoPreVendedor.valor,
             [slugConsultor]: opcaoConsultor.valorOpcao,
             ...camposRecebidosNoLink,
             ...(slugQuantidadeClientes && quantidadeClientes !== null

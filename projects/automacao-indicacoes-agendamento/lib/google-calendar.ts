@@ -18,8 +18,8 @@ const DURACAO_REUNIAO_MINUTOS = 30;
 export const ANTECEDENCIA_MINIMA_MINUTOS = 15;
 const ORIGEM_EVENTO = "indicacao-b2b-sst";
 
-export const HORARIOS_AGENDA = Array.from({ length: 21 }, (_, indice) => {
-  const minutosTotais = 8 * 60 + indice * 30;
+export const HORARIOS_AGENDA = Array.from({ length: 19 }, (_, indice) => {
+  const minutosTotais = 8 * 60 + 30 + indice * 30;
   const hora = Math.floor(minutosTotais / 60);
   const minutos = minutosTotais % 60;
   return `${String(hora).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
@@ -418,7 +418,10 @@ async function aguardarLinkMeet(
 ) {
   let evento = eventoInicial;
 
-  for (let tentativa = 0; tentativa < 12; tentativa += 1) {
+  // A criação da conferência é assíncrona. Em produção o Google pode levar
+  // alguns segundos para devolver o hangoutLink, mesmo depois de já ter
+  // criado o evento e disparado os convites aos participantes.
+  for (let tentativa = 0; tentativa < 30; tentativa += 1) {
     const linkMeet = extrairLinkMeet(evento);
     if (linkMeet) return linkMeet;
 
@@ -428,7 +431,7 @@ async function aguardarLinkMeet(
       break;
     }
 
-    await new Promise((resolver) => setTimeout(resolver, 250));
+    await new Promise((resolver) => setTimeout(resolver, 1_000));
     evento = await requisicaoGoogle<EventoGoogle>(emailResponsavel, {
       url: `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(idEvento)}`,
       method: "GET",
@@ -563,7 +566,7 @@ export async function criarEventoGoogle(dados: {
     url: "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all",
     method: "POST",
     data: {
-      summary: `Reunião SST - ${dados.nomeEmpresa}`,
+      summary: `APRESENTAÇÃO PARCERIA QUALITYSST - ${dados.nomeEmpresa}`,
       description: dados.descricao,
       attendees: emailsParticipantes.map((email) => ({ email })),
       start: { dateTime: inicio.toISOString(), timeZone: FUSO_HORARIO },
@@ -615,7 +618,18 @@ export async function criarEventoGoogle(dados: {
       evento.id,
       evento,
     );
-    await configurarAcessoAbertoMeet(dados.responsavel.email, linkMeet);
+    try {
+      await configurarAcessoAbertoMeet(dados.responsavel.email, linkMeet);
+    } catch (erro) {
+      console.warn(
+        "O evento foi criado, mas não foi possível configurar o Meet como acesso aberto.",
+        {
+          codigo: erro instanceof ErroGoogleAgenda ? erro.codigo : null,
+          detalhes:
+            erro instanceof ErroGoogleAgenda ? erro.detalhes : undefined,
+        },
+      );
+    }
   } catch (erro) {
     await requisicaoGoogle<unknown>(dados.responsavel.email, {
       url: `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(evento.id)}`,
