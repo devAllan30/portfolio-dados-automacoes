@@ -1,0 +1,41 @@
+{
+  "name": "qualitycert-sorteio-eventos",
+  "version": "0.24.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --ignore-pattern .next --ignore-pattern dist --ignore-pattern releases",
+    "db:setup": "tsx scripts/setup-database.ts",
+    "db:create-user": "tsx scripts/create-user.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:smoke-schema": "tsx scripts/smoke-schema.ts",
+    "db:smoke-auth": "tsx scripts/smoke-auth.ts",
+    "db:smoke": "tsx scripts/smoke-db.ts",
+    "db:smoke-admin": "tsx scripts/smoke-admin.ts",
+    "db:smoke-winner": "tsx scripts/smoke-winner-search.ts",
+    "db:smoke-wheel": "tsx scripts/smoke-wheel-participation.ts",
+    "db:remove-qc-prefix": "tsx scripts/remove-qc-prefix.ts"
+  },
+  "dependencies": {
+    "mysql2": "^3.14.4",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "dotenv": "^17.2.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "tsx": "^4.20.6",
+    "typescript": "5.9.3"
+  },
+  "type": "module"
+}
