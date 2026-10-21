@@ -10,11 +10,13 @@ Este portfólio apresenta problemas, decisões e resultados em nível profission
 |---|---|---|
 | [Gerenciador de Eventos](cases/gerenciador-de-eventos.md) | Captação de leads em papel, sorteio manual e transcrição posterior | Cadastro por QR Code, dados estruturados, relatórios e sorteios digitais |
 | [Automação de Indicações e Agendamento Comercial](cases/formulario-indicacao-interna.md) | Cadastro manual, distribuição de responsáveis e conflitos de agenda | Fluxos B2C e B2B integrados com banco de dados, RD Station, Google Agenda e Meet |
+| [Integração RD Station CRM → Omie](cases/integracao-rd-omie.md) | Criação manual de clientes e Ordens de Serviço após o fechamento comercial | Fluxo diário idempotente, validação cadastral, tratamento de exceções e relatório operacional |
 
 ## Código público sanitizado
 
 - [Gerenciador de Eventos — Sorteio e Roleta](projects/qualitycert-sorteio-eventos/)
 - [Automação de indicações e agendamento](projects/automacao-indicacoes-agendamento/)
+- [Integração diária RD Station CRM → Omie](projects/integracao-rd-omie/)
 
 ## Competências demonstradas
 
