@@ -10,8 +10,16 @@ import {
   ClienteRdV2,
   ErroRdV2,
   type EmpresaRd,
+  type NegociacaoRd,
 } from "../../../lib/rd-station-v2";
 import { formatarDocumentoParceiro } from "../../../lib/documento-parceiro";
+import {
+  dataAgendamentoValida,
+  dataEhFimDeSemana,
+} from "../../../lib/data-agendamento";
+import {
+  decidirAcaoNegociacaoAgendamento,
+} from "../../../lib/regra-negociacao-agendamento";
 import {
   ANTECEDENCIA_MINIMA_MINUTOS,
   consultarDisponibilidadeDia,
@@ -46,6 +54,7 @@ const ID_EQUIPE_CLOSER_SST = process.env.RD_EQUIPE_CLOSER?.trim() || "";
 const ID_CAMPANHA_AGENDAMENTO =
   process.env.RD_CAMPANHA_AGENDAMENTO?.trim() || "";
 const ASSUNTO_REUNIAO = "Reunião Sst";
+const ASSUNTO_TENTATIVA_AGENDAMENTO = "Tentativa de Agendamento de Reunião";
 const EMAIL_BOT_TRANSCRICAO = "meetbot@meetgeek.ai";
 const MOTIVO_EMPRESA_MESMO_NOME =
   "Já existe uma empresa com esse nome cadastrada no RD Station CRM.";
@@ -202,6 +211,32 @@ function dataHoraComFusoRd(data: string, horario: string) {
   return `${data}T${horario}:00.000-03:00`;
 }
 
+function formatarDataHoraBrasil(data: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .format(data)
+    .replace(",", " ");
+}
+
+function montarDescricaoTentativaAgendamento(
+  dataContato: Date,
+  consultor: string,
+) {
+  return [
+    "Tentativa de agendamento de reunião pelo time de fidelização Qualitycert.",
+    `Data do agendamento: ${formatarDataHoraBrasil(dataContato)}`,
+    `Consultor: ${consultor}`,
+    "ENTRAR EM CONTATO",
+  ].join("\n");
+}
+
 function escolherResponsavelEquilibrado(
   responsaveis: UsuarioAgenda[],
   contagens: Map<string, number>,
@@ -303,9 +338,19 @@ function montarAnotacaoNegociacaoExistente(dados: {
 
 export async function GET(requisicao: Request) {
   const data = new URL(requisicao.url).searchParams.get("data")?.trim() ?? "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+  if (!dataAgendamentoValida(data)) {
     return NextResponse.json(
       { mensagem: "Informe uma data válida para consultar os horários." },
+      { status: 400 },
+    );
+  }
+
+  if (dataEhFimDeSemana(data)) {
+    return NextResponse.json(
+      {
+        mensagem:
+          "Não realizamos agendamentos aos sábados e domingos. Escolha um dia útil.",
+      },
       { status: 400 },
     );
   }
@@ -495,7 +540,9 @@ export async function POST(requisicao: Request) {
     );
   }
 
-  const dataHora = dataHoraDaReuniao(dataReuniao, horarioReuniao);
+  const dataHora = dataAgendamentoValida(dataReuniao)
+    ? dataHoraDaReuniao(dataReuniao, horarioReuniao)
+    : null;
   if (!dataHora) {
     return NextResponse.json(
       { mensagem: "Informe uma data e um horário válidos para a reunião." },
@@ -503,9 +550,19 @@ export async function POST(requisicao: Request) {
     );
   }
 
+  if (dataEhFimDeSemana(dataReuniao)) {
+    return NextResponse.json(
+      {
+        mensagem:
+          "Não realizamos agendamentos aos sábados e domingos. Escolha um dia útil.",
+      },
+      { status: 400 },
+    );
+  }
+
   if (!HORARIOS_DISPONIVEIS.has(horarioReuniao)) {
     return NextResponse.json(
-      { mensagem: "Selecione um dos horários disponíveis entre 08:00 e 18:00." },
+      { mensagem: "Selecione um dos horários disponíveis entre 08:30 e 17:30." },
       { status: 400 },
     );
   }
@@ -528,14 +585,136 @@ export async function POST(requisicao: Request) {
   const siglaBanco = idParceiro.endsWith("_D") ? "D" : "Q";
   const idParceiroBase = idParceiro.slice(0, -2);
   const operacaoBanco = siglaBanco === "D" ? "Operação D" : "Operação Q";
+  let rd: ClienteRdV2;
+  let slugParceiro: string;
+  let empresasLocalizadas: EmpresaRd[];
+  let negociacaoLocalizada: NegociacaoRd | null = null;
+
+  try {
+    rd = await ClienteRdV2.criar();
+    slugParceiro = await rd.obterSlugCampo(
+      ID_CAMPO_PARCEIRO_EMPRESA,
+      "organization",
+    );
+    empresasLocalizadas = await rd.buscarEmpresasPorCampo(
+      slugParceiro,
+      idParceiro,
+    );
+
+    if (empresasLocalizadas.length > 1) {
+      return NextResponse.json(
+        {
+          titulo: "AGENDAMENTO NÃO REALIZADO!",
+          mensagem:
+            "Mais de uma empresa foi encontrada com este ID de parceiro. O agendamento não foi criado.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (empresasLocalizadas[0]) {
+      const negociacoes = await rd.buscarNegociacoesEmpresaNoFunil(
+        empresasLocalizadas[0].id,
+        ID_FUNIL_AGENDAMENTO,
+      );
+
+      if (negociacoes[0]) {
+        negociacaoLocalizada = await rd.obterNegociacao(negociacoes[0].id);
+
+        if (
+          decidirAcaoNegociacaoAgendamento(negociacaoLocalizada) ===
+          "parceiro_ja_sst"
+        ) {
+          return NextResponse.json(
+            {
+              titulo: "AGENDAMENTO NÃO REALIZADO!",
+              mensagem: "PARCEIRO JÁ É SST.",
+              codigo: "PARCEIRO_JA_SST",
+            },
+            { status: 409 },
+          );
+        }
+
+        if (
+          negociacaoLocalizada.status === "ongoing" &&
+          negociacaoLocalizada.stage_id
+        ) {
+          const etapa = await rd.obterEtapaFunil(
+            ID_FUNIL_AGENDAMENTO,
+            negociacaoLocalizada.stage_id,
+          );
+          const acao = decidirAcaoNegociacaoAgendamento(
+            negociacaoLocalizada,
+            etapa.name,
+          );
+
+          if (acao === "criar_tarefa_contato") {
+            const idResponsavelNegociacao = String(
+              negociacaoLocalizada.owner_id ?? "",
+            ).trim();
+            if (!idResponsavelNegociacao) {
+              throw new Error(
+                "A negociação em andamento não possui um responsável no RD Station.",
+              );
+            }
+
+            const responsavelNegociacao = await rd.obterUsuario(
+              idResponsavelNegociacao,
+            );
+            const dataContato = new Date(Date.now() + 10 * 60_000);
+            const tarefa = await rd.criarTarefaContato({
+              idNegociacao: negociacaoLocalizada.id,
+              nome: ASSUNTO_TENTATIVA_AGENDAMENTO,
+              descricao: montarDescricaoTentativaAgendamento(
+                dataContato,
+                consultor,
+              ),
+              dataHoraIso: dataContato.toISOString(),
+              idCriador: idResponsavelNegociacao,
+              idsResponsaveis: [idResponsavelNegociacao],
+            });
+
+            return NextResponse.json(
+              {
+                titulo: "AGENDAMENTO NÃO REALIZADO!",
+                mensagem: `JÁ EXISTE UMA NEGOCIAÇÃO EM ANDAMENTO COM O CLOSER ${responsavelNegociacao.name} NA ETAPA ${etapa.name} PARA ESSE PARCEIRO.`,
+                motivos: [
+                  "TAREFA DE CONTATO CRIADA NO RD CRM",
+                  "COMUNICAR O COORDENADOR SST",
+                ],
+                codigo: "NEGOCIACAO_EM_ANDAMENTO",
+                tarefa_id: tarefa.id,
+                responsavel: responsavelNegociacao.name,
+                etapa: etapa.name,
+              },
+              { status: 409 },
+            );
+          }
+        }
+      }
+    }
+  } catch (erro) {
+    console.error("Não foi possível analisar a negociação antes do agendamento.", {
+      status: erro instanceof ErroRdV2 ? erro.status : null,
+      caminho: erro instanceof ErroRdV2 ? erro.caminho : null,
+      detalhe: erro instanceof Error ? erro.message : "Erro desconhecido.",
+    });
+    return NextResponse.json(
+      {
+        mensagem:
+          "Não foi possível verificar a situação atual do parceiro no RD Station.",
+      },
+      { status: 502 },
+    );
+  }
+
   let idIndicacao = 0;
   let reservaGoogle: ReservaGoogle | null = null;
-  let rd: ClienteRdV2;
   let responsavel: UsuarioAgenda;
 
   try {
     const reserva = await executarReservaEmSerie(async () => {
-      const clienteRd = await ClienteRdV2.criar();
+      const clienteRd = rd;
       const usuariosEquipe = await clienteRd.obterUsuariosEquipe(
         ID_EQUIPE_CLOSER_SST,
       );
@@ -578,6 +757,7 @@ export async function POST(requisicao: Request) {
         observacao: observacao || undefined,
         dataHoraReuniao: `${dataReuniao} ${horarioReuniao}:00`,
         responsavelReuniaoId: responsavelEscolhido.id,
+        tipoEcossistema: "Qualitycert",
       });
 
       try {
@@ -669,26 +849,7 @@ export async function POST(requisicao: Request) {
         : {}),
     };
 
-    const slugParceiro = await rd.obterSlugCampo(
-      ID_CAMPO_PARCEIRO_EMPRESA,
-      "organization",
-    );
-    const empresas = await rd.buscarEmpresasPorCampo(slugParceiro, idParceiro);
-
-    if (empresas.length > 1) {
-      await atualizarIndicacaoSemInterromper(idIndicacao, {
-        status: "erro",
-        mensagem: "Mais de uma empresa foi encontrada com este ID de parceiro.",
-      });
-      await cancelarEventoGoogleSemInterromper(reservaGoogle);
-      return NextResponse.json(
-        {
-          mensagem:
-            "Mais de uma empresa foi encontrada com este ID de parceiro. O agendamento não foi criado.",
-        },
-        { status: 409 },
-      );
-    }
+    const empresas = empresasLocalizadas;
 
     let empresa: EmpresaRd;
     if (empresas[0]) {
@@ -705,11 +866,7 @@ export async function POST(requisicao: Request) {
     }
     empresaCriada = empresas.length === 0;
 
-    const negociacoes = await rd.buscarNegociacoesEmpresaNoFunil(
-      empresa.id,
-      ID_FUNIL_AGENDAMENTO,
-    );
-    let negociacao = negociacoes[0];
+    let negociacao = empresas[0] ? negociacaoLocalizada : null;
     const negociacaoJaExistia = Boolean(negociacao);
 
     if (!negociacao) {
@@ -829,6 +986,9 @@ export async function POST(requisicao: Request) {
       empresaRdId: empresa.id,
       contatoRdId: contatoCriado?.id,
       negociacaoRdId: negociacao.id,
+      tipoEcossistema: "Qualitycert",
+      idTarefaRd: tarefa.id,
+      idTarefaGoogleAgenda: reservaGoogle.id,
     });
 
     const anotacao = negociacaoJaExistia

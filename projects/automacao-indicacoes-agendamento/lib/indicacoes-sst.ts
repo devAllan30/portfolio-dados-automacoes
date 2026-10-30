@@ -23,6 +23,9 @@ export type NovaIndicacaoSst = {
   observacao?: string;
   dataHoraReuniao?: string;
   responsavelReuniaoId?: string;
+  tipoEcossistema?: string;
+  idTarefaRd?: string;
+  idTarefaGoogleAgenda?: string;
 };
 
 export type AtualizacaoIndicacaoSst = {
@@ -31,6 +34,9 @@ export type AtualizacaoIndicacaoSst = {
   empresaRdId?: string | null;
   contatoRdId?: string | null;
   negociacaoRdId?: string | null;
+  tipoEcossistema?: string | null;
+  idTarefaRd?: string | null;
+  idTarefaGoogleAgenda?: string | null;
 };
 
 async function inserirIndicacao(
@@ -57,9 +63,12 @@ async function inserirIndicacao(
           observacao,
           data_hora_reuniao,
           responsavel_reuniao_id,
+          tipo_Ecossistema,
+          id_tarefa_rd,
+          id_tarefa_google_agenda,
           status_integracao,
           mensagem_integracao
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'recebida', ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'recebida', ?)
       `,
       [
         dados.idParceiro,
@@ -79,6 +88,9 @@ async function inserirIndicacao(
         dados.observacao || null,
         dados.dataHoraReuniao || null,
         dados.responsavelReuniaoId || null,
+        dados.tipoEcossistema || null,
+        dados.idTarefaRd || null,
+        dados.idTarefaGoogleAgenda || null,
         dados.discriminator === "B2B"
           ? "Agendamento B2B recebido e aguardando processamento no RD Station."
           : dados.discriminator === "B2C"
@@ -143,7 +155,10 @@ export async function atualizarIndicacao(
             mensagem_integracao = ?,
             empresa_rd_id = COALESCE(?, empresa_rd_id),
             contato_rd_id = COALESCE(?, contato_rd_id),
-            negociacao_rd_id = COALESCE(?, negociacao_rd_id)
+            negociacao_rd_id = COALESCE(?, negociacao_rd_id),
+            tipo_Ecossistema = COALESCE(?, tipo_Ecossistema),
+            id_tarefa_rd = COALESCE(?, id_tarefa_rd),
+            id_tarefa_google_agenda = COALESCE(?, id_tarefa_google_agenda)
         WHERE id = ?
       `,
       [
@@ -152,6 +167,9 @@ export async function atualizarIndicacao(
         atualizacao.empresaRdId ?? null,
         atualizacao.contatoRdId ?? null,
         atualizacao.negociacaoRdId ?? null,
+        atualizacao.tipoEcossistema ?? null,
+        atualizacao.idTarefaRd ?? null,
+        atualizacao.idTarefaGoogleAgenda ?? null,
         idIndicacao,
       ],
     );

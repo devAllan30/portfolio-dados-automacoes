@@ -5,7 +5,9 @@ import {
   ConfirmacaoAgendamento,
   type ResumoAgendamento,
 } from "./confirmacao-agendamento";
+import { CalendarioDataReuniao } from "./calendario-data-reuniao";
 import { formatarDocumentoParceiro } from "../lib/documento-parceiro";
+import { dataEhFimDeSemana } from "../lib/data-agendamento";
 
 type PropriedadesFormularioAgendamento = {
   operacao: string;
@@ -77,15 +79,20 @@ export function FormularioAgendamento({
   const idParceiroExibicao = idParceiro.replace(/_[DQ]$/i, "");
   const documentoParceiroExibicao =
     formatarDocumentoParceiro(documentoParceiro) ?? documentoParceiro;
-  const [dataMinima] = useState(obterDataAtualBrasil);
+  const [dataInicial] = useState(obterDataAtualBrasil);
   const [dados, setDados] = useState(dadosIniciais);
   const [enviando, setEnviando] = useState(false);
   const [carregandoHorarios, setCarregandoHorarios] = useState(false);
   const [horariosDisponiveis, setHorariosDisponiveis] = useState<string[]>([]);
   const [mensagemHorarios, setMensagemHorarios] = useState("");
   const [confirmacao, setConfirmacao] = useState<ResumoAgendamento | null>(null);
+  const [tituloErro, setTituloErro] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
   const [motivosErro, setMotivosErro] = useState<string[]>([]);
+  const [negociacaoEmAndamento, setNegociacaoEmAndamento] = useState<{
+    closer: string;
+    etapa: string;
+  } | null>(null);
   const [emailsSecundarios, setEmailsSecundarios] = useState<string[]>([]);
 
   const contexto = useMemo(
@@ -110,7 +117,7 @@ export function FormularioAgendamento({
   );
 
   useEffect(() => {
-    if (!dados.data_reuniao) return;
+    if (!dados.data_reuniao || dataEhFimDeSemana(dados.data_reuniao)) return;
 
     const controlador = new AbortController();
 
@@ -161,8 +168,10 @@ export function FormularioAgendamento({
   }, [dados.data_reuniao]);
 
   function atualizarCampo(nome: keyof DadosAgendamento, valor: string) {
+    setTituloErro("");
     setMensagemErro("");
     setMotivosErro([]);
+    setNegociacaoEmAndamento(null);
     if (nome === "data_reuniao") {
       setHorariosDisponiveis([]);
       setMensagemHorarios("");
@@ -173,6 +182,27 @@ export function FormularioAgendamento({
       [nome]: valor,
       ...(nome === "data_reuniao" ? { horario_reuniao: "" } : {}),
     }));
+  }
+
+  function atualizarDataReuniao(valor: string) {
+    if (valor && dataEhFimDeSemana(valor)) {
+      setTituloErro("");
+      setMensagemErro("");
+      setMotivosErro([]);
+      setHorariosDisponiveis([]);
+      setCarregandoHorarios(false);
+      setMensagemHorarios(
+        "Não realizamos agendamentos aos sábados e domingos. Escolha um dia útil.",
+      );
+      setDados((atual) => ({
+        ...atual,
+        data_reuniao: "",
+        horario_reuniao: "",
+      }));
+      return;
+    }
+
+    atualizarCampo("data_reuniao", valor);
   }
 
   function adicionarEmailSecundario() {
@@ -199,6 +229,14 @@ export function FormularioAgendamento({
   async function enviarFormulario(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
 
+    if (!dados.data_reuniao) {
+      setTituloErro("");
+      setMotivosErro([]);
+      setMensagemErro("Selecione uma data útil para a reunião.");
+      document.querySelector<HTMLElement>(".calendario-reuniao")?.focus();
+      return;
+    }
+
     const numerosTelefone = dados.telefone_contato.replace(/\D/g, "");
     if (![10, 11].includes(numerosTelefone.length)) {
       evento.currentTarget.telefone_contato.setCustomValidity(
@@ -210,8 +248,10 @@ export function FormularioAgendamento({
 
     evento.currentTarget.telefone_contato.setCustomValidity("");
     setEnviando(true);
+    setTituloErro("");
     setMensagemErro("");
     setMotivosErro([]);
+    setNegociacaoEmAndamento(null);
 
     try {
       const resposta = await fetch("/api/agendamentos", {
@@ -226,21 +266,35 @@ export function FormularioAgendamento({
         }),
       });
       const resultado = (await resposta.json()) as {
+        titulo?: string;
         mensagem?: string;
         motivos?: string[];
+        codigo?: string;
         empresa_criada?: boolean;
         negociacao_criada?: boolean;
         empresa_id?: string;
         negociacao_id?: string;
         tarefa_id?: string;
         responsavel?: string;
+        etapa?: string;
         evento_google_id?: string;
         evento_google_link?: string;
         evento_google_meet_link?: string;
       };
 
       if (!resposta.ok) {
+        setTituloErro(resultado.titulo ?? "");
         setMotivosErro(Array.isArray(resultado.motivos) ? resultado.motivos : []);
+        setNegociacaoEmAndamento(
+          resultado.codigo === "NEGOCIACAO_EM_ANDAMENTO" &&
+            resultado.responsavel &&
+            resultado.etapa
+            ? {
+                closer: resultado.responsavel.toLocaleUpperCase("pt-BR"),
+                etapa: resultado.etapa.toLocaleUpperCase("pt-BR"),
+              }
+            : null,
+        );
         setMensagemErro(
           resultado.mensagem ??
             "Não foi possível concluir o agendamento. Tente novamente.",
@@ -287,7 +341,9 @@ export function FormularioAgendamento({
       setConfirmacao(resumo);
       window.history.replaceState(window.history.state, "", "/obrigado");
     } catch {
+      setTituloErro("");
       setMotivosErro([]);
+      setNegociacaoEmAndamento(null);
       setMensagemErro(
         "Não foi possível conectar ao serviço de agendamentos. Tente novamente.",
       );
@@ -310,7 +366,7 @@ export function FormularioAgendamento({
           <div className="marca">
             <span className="simbolo-marca" aria-hidden="true">Q</span>
             <div>
-              <strong>Programa de Indicações</strong>
+              <strong>QualitySST</strong>
               <span>Indicação e Agendamento</span>
             </div>
           </div>
@@ -341,6 +397,10 @@ export function FormularioAgendamento({
             <label>
               <span>ID do parceiro</span>
               <input value={idParceiroExibicao} readOnly aria-readonly="true" />
+            </label>
+            <label>
+              <span>Empresa parceira</span>
+              <input value={nomeParceiro} readOnly aria-readonly="true" />
             </label>
             <label>
               <span>Operação</span>
@@ -496,17 +556,20 @@ export function FormularioAgendamento({
               </div>
             </div>
 
-            <label className="campo">
-              <span>Data da reunião <b>*</b></span>
+            <div className="campo campo-calendario">
+              <span id="rotulo-data-reuniao">Data da reunião <b>*</b></span>
               <input
+                type="hidden"
                 name="data_reuniao"
-                type="date"
-                min={dataMinima}
                 value={dados.data_reuniao}
-                onChange={(evento) => atualizarCampo("data_reuniao", evento.target.value)}
-                required
               />
-            </label>
+              <CalendarioDataReuniao
+                value={dados.data_reuniao}
+                min={dataInicial}
+                onChange={atualizarDataReuniao}
+              />
+              <small>Agendamentos disponíveis somente de segunda a sexta-feira.</small>
+            </div>
 
             <label className="campo">
               <span>Horário da reunião <b>*</b></span>
@@ -558,8 +621,18 @@ export function FormularioAgendamento({
               <div className="mensagem-erro campo-largo" role="alert">
                 <span aria-hidden="true">!</span>
                 <div>
-                  <strong>Não foi possível agendar a reunião.</strong>
-                  <p>{mensagemErro}</p>
+                  <strong>
+                    {tituloErro || "Não foi possível agendar a reunião."}
+                  </strong>
+                  {negociacaoEmAndamento ? (
+                    <p>
+                      JÁ EXISTE UMA NEGOCIAÇÃO EM ANDAMENTO COM O CLOSER{" "}
+                      <b>{negociacaoEmAndamento.closer}</b> NA ETAPA{" "}
+                      <b>{negociacaoEmAndamento.etapa}</b> PARA ESSE PARCEIRO.
+                    </p>
+                  ) : (
+                    <p>{mensagemErro}</p>
+                  )}
                   {motivosErro.length > 0 && (
                     <ul>
                       {motivosErro.map((motivo) => (
@@ -583,7 +656,7 @@ export function FormularioAgendamento({
         </section>
 
         <footer className="rodape-pagina">
-          <span>© 2026 Programa de Indicações</span>
+          <span>© 2026 QualitySST</span>
           <span>Seus dados são tratados com segurança e responsabilidade.</span>
         </footer>
       </div>

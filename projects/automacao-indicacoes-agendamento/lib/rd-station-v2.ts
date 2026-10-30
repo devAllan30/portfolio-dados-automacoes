@@ -71,6 +71,11 @@ export type UsuarioRd = {
   email?: string;
 };
 
+export type EtapaFunilRd = {
+  id: string;
+  name: string;
+};
+
 export class ErroRdV2 extends Error {
   constructor(
     public readonly status: number,
@@ -319,6 +324,20 @@ export class ClienteRdV2 {
     return resposta.data;
   }
 
+  async obterUsuario(idUsuario: string) {
+    const resposta = await this.executar<UsuarioRd>(
+      `/users/${encodeURIComponent(idUsuario)}`,
+    );
+    return resposta.data;
+  }
+
+  async obterEtapaFunil(idFunil: string, idEtapa: string) {
+    const resposta = await this.executar<EtapaFunilRd>(
+      `/pipelines/${encodeURIComponent(idFunil)}/stages/${encodeURIComponent(idEtapa)}`,
+    );
+    return resposta.data;
+  }
+
   async aguardarResponsavelNegociacao(
     idNegociacao: string,
     tentativas = 12,
@@ -503,6 +522,32 @@ export class ClienteRdV2 {
           ...(dados.idsResponsaveis?.length
             ? { owner_ids: dados.idsResponsaveis }
             : {}),
+        },
+      }),
+    });
+    return resposta.data;
+  }
+
+  async criarTarefaContato(dados: {
+    idNegociacao: string;
+    nome: string;
+    descricao: string;
+    dataHoraIso: string;
+    idCriador: string;
+    idsResponsaveis: string[];
+  }) {
+    const resposta = await this.executar<TarefaRd>("/tasks", {
+      method: "POST",
+      body: JSON.stringify({
+        data: {
+          name: dados.nome,
+          description: dados.descricao,
+          type: "task",
+          status: "open",
+          due_date: dados.dataHoraIso,
+          deal_id: dados.idNegociacao,
+          created_by_id: dados.idCriador,
+          owner_ids: dados.idsResponsaveis,
         },
       }),
     });

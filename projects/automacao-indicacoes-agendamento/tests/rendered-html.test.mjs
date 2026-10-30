@@ -106,6 +106,8 @@ test("renderiza o formulario de indicacao com agendamento", async () => {
   assert.match(html, /Adicionar outro e-mail/i);
   assert.match(html, /somente pelo Google Agenda/i);
   assert.match(html, /Data da reuni[^<]+/i);
+  assert.match(html, /Selecionar data/i);
+  assert.match(html, /aria-controls="calendario-data-reuniao"/i);
   assert.match(html, /Hor[^<]+rio da reuni[^<]+/i);
   assert.match(html, /Selecione primeiro a data/i);
   assert.doesNotMatch(html, /<option value="08:00">08:00<\/option>/);
@@ -172,18 +174,57 @@ test("restaura sinal de mais recebido como til para compatibilidade com IIS", as
   }
 });
 
+test("aplica as regras de negocio conforme status e etapa da negociacao", async () => {
+  const { decidirAcaoNegociacaoAgendamento } = await import(
+    "../lib/regra-negociacao-agendamento.ts"
+  );
+
+  assert.equal(
+    decidirAcaoNegociacaoAgendamento({ status: "lost" }, "Reunião Agendada"),
+    "continuar_agendamento",
+  );
+  assert.equal(
+    decidirAcaoNegociacaoAgendamento({ status: "won" }, "Reunião Agendada"),
+    "parceiro_ja_sst",
+  );
+
+  for (const etapa of [
+    "Reunião Agendada",
+    "Proposta Apresentada",
+    "Aguardando Indicações",
+    "Indicou Cliente",
+    "Aguardando Start",
+  ]) {
+    assert.equal(
+      decidirAcaoNegociacaoAgendamento({ status: "ongoing" }, etapa),
+      "criar_tarefa_contato",
+    );
+  }
+
+  assert.equal(
+    decidirAcaoNegociacaoAgendamento(
+      { status: "ongoing" },
+      "Etapa fora da regra",
+    ),
+    "continuar_agendamento",
+  );
+});
+
 test("mantem a configuracao do dominio oficial e do inicio de producao", async () => {
   const [
     layout,
     packageJson,
     inicioProducao,
     formularioAgendamento,
+    calendarioAgendamento,
     apiIndicacoes,
     apiAgendamentos,
     clienteRd,
     historicoIndicacoes,
     migracaoAgendamento,
     googleCalendar,
+    dataAgendamento,
+    regraNegociacaoAgendamento,
     ambienteProducao,
     carregadorGoogle,
     viteConfig,
@@ -192,6 +233,7 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../scripts/iniciar-producao.mjs", import.meta.url), "utf8"),
     readFile(new URL("../app/formulario-agendamento.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/calendario-data-reuniao.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/indicacoes/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/agendamentos/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/rd-station-v2.ts", import.meta.url), "utf8"),
@@ -204,6 +246,11 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
       "utf8",
     ),
     readFile(new URL("../lib/google-calendar.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/data-agendamento.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../lib/regra-negociacao-agendamento.ts", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../.env.production.example", import.meta.url), "utf8"),
     readFile(
       new URL("../scripts/carregar-credencial-google.mjs", import.meta.url),
@@ -217,7 +264,18 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
   assert.match(packageJson, /"start":\s*"node scripts\/iniciar-producao\.mjs"/);
   assert.match(inicioProducao, /\.env\.production/);
   assert.match(inicioProducao, /RD_CRM_V1_TOKEN/);
-  assert.match(formularioAgendamento, /min=\{dataMinima\}/);
+  assert.match(formularioAgendamento, /CalendarioDataReuniao/);
+  assert.doesNotMatch(formularioAgendamento, /type="date"/);
+  assert.match(formularioAgendamento, /atualizarDataReuniao/);
+  assert.match(formularioAgendamento, /somente de segunda a sexta-feira/);
+  assert.match(calendarioAgendamento, /dataEhFimDeSemana\(valor\)/);
+  assert.match(calendarioAgendamento, /disabled=\{data\.indisponivel\}/);
+  assert.match(calendarioAgendamento, /valor < min \|\| valor > max/);
+  assert.match(calendarioAgendamento, /setAberto\(false\)/);
+  assert.match(calendarioAgendamento, /className="calendario-reuniao"/);
+  assert.match(apiAgendamentos, /dataEhFimDeSemana\(data\)/);
+  assert.match(apiAgendamentos, /dataEhFimDeSemana\(dataReuniao\)/);
+  assert.match(dataAgendamento, /diaDaSemana === 0 \|\| diaDaSemana === 6/);
   assert.match(apiAgendamentos, /RD_CAMPANHA_AGENDAMENTO/);
   assert.match(apiAgendamentos, /RD_ETAPA_AGENDAMENTO/);
   assert.match(apiIndicacoes, /RD_ETAPA_INDICACAO/);
@@ -284,6 +342,48 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
   assert.match(clienteRd, /NOME_SEGMENTO_ECOSSISTEMA\s*=\s*"ECOSSISTEMA"/);
   assert.match(clienteRd, /segment_ids:\s*\[idSegmento\]/);
   assert.match(clienteRd, /new Set\(\[\.\.\.segmentosAtuais, idSegmento\]\)/);
+  assert.match(regraNegociacaoAgendamento, /negociacao\.status === "won"/);
+  assert.match(
+    regraNegociacaoAgendamento,
+    /negociacao\.status === "ongoing"/,
+  );
+  for (const etapa of [
+    "Reunião Agendada",
+    "Proposta Apresentada",
+    "Aguardando Indicações",
+    "Indicou Cliente",
+    "Aguardando Start",
+  ]) {
+    assert.match(regraNegociacaoAgendamento, new RegExp(etapa));
+  }
+  assert.match(apiAgendamentos, /PARCEIRO JÁ É SST/);
+  assert.match(apiAgendamentos, /NEGOCIACAO_EM_ANDAMENTO/);
+  assert.match(apiAgendamentos, /TAREFA DE CONTATO CRIADA NO RD CRM/);
+  assert.match(apiAgendamentos, /COMUNICAR O COORDENADOR SST/);
+  assert.match(apiAgendamentos, /Date\.now\(\) \+ 10 \* 60_000/);
+  assert.match(clienteRd, /async criarTarefaContato/);
+  assert.match(clienteRd, /type:\s*"task"/);
+  assert.match(formularioAgendamento, /tituloErro/);
+  assert.match(
+    formularioAgendamento,
+    /closer: resultado\.responsavel\.toLocaleUpperCase\("pt-BR"\)/,
+  );
+  assert.match(
+    formularioAgendamento,
+    /etapa: resultado\.etapa\.toLocaleUpperCase\("pt-BR"\)/,
+  );
+  assert.match(
+    formularioAgendamento,
+    /<b>\{negociacaoEmAndamento\.closer\}<\/b>/,
+  );
+  assert.match(
+    formularioAgendamento,
+    /<b>\{negociacaoEmAndamento\.etapa\}<\/b>/,
+  );
+  assert.ok(
+    apiAgendamentos.indexOf("decidirAcaoNegociacaoAgendamento") <
+      apiAgendamentos.indexOf("const reserva = await executarReservaEmSerie"),
+  );
   assert.match(apiAgendamentos, /status === "lost"/);
   assert.match(apiAgendamentos, /montarAnotacaoNegociacaoExistente/);
   assert.match(
@@ -302,6 +402,15 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
   );
   assert.match(historicoIndicacoes, /data_hora_reuniao/);
   assert.match(historicoIndicacoes, /responsavel_reuniao_id/);
+  assert.match(historicoIndicacoes, /tipo_Ecossistema/);
+  assert.match(historicoIndicacoes, /id_tarefa_rd/);
+  assert.match(historicoIndicacoes, /id_tarefa_google_agenda/);
+  assert.match(apiAgendamentos, /tipoEcossistema:\s*"Qualitycert"/);
+  assert.match(apiAgendamentos, /idTarefaRd:\s*tarefa\.id/);
+  assert.match(
+    apiAgendamentos,
+    /idTarefaGoogleAgenda:\s*reservaGoogle\.id/,
+  );
   assert.match(migracaoAgendamento, /ADD COLUMN `discriminator`/);
   assert.match(packageJson, /"jose"/);
   assert.match(formularioAgendamento, /\/api\/agendamentos\?data=/);
