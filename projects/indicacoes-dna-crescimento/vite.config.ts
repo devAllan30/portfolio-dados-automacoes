@@ -17,6 +17,22 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 const localBindingConfig = {
   main: "./build/sites-worker.ts",
   compatibility_flags: ["nodejs_compat", "nodejs_compat_populate_process_env"],
+  secrets: {
+    required: [
+      "MYSQL_HOST",
+      "MYSQL_PORT",
+      "MYSQL_USER",
+      "MYSQL_PASSWORD",
+      "MYSQL_DATABASE",
+      "RD_CLIENT_ID",
+      "RD_CLIENT_SECRET",
+      "RD_OAUTH_TOKEN_URL",
+      "RD_CRM_V1_TOKEN",
+      "INDICATION_BASE_URL",
+      "GOOGLE_SERVICE_ACCOUNT_JSON_BASE64",
+      "GOOGLE_CALENDAR_TIMEZONE",
+    ],
+  },
   d1_databases: d1
     ? [
         {

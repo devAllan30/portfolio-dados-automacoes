@@ -2,6 +2,9 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { projectRoot } from "./sites-env.mjs";
+import { loadGoogleCredentialIntoEnvironment } from "./load-google-credential.mjs";
+
+loadGoogleCredentialIntoEnvironment();
 
 const host = process.env.APP_HOST?.trim() || "127.0.0.1";
 const port = Number(process.env.APP_PORT || "4318");

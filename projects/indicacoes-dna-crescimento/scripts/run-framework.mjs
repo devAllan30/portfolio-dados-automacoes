@@ -1,6 +1,12 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { readExecutionProfile } from "./execution-profile.mjs";
+import { loadGoogleCredentialIntoEnvironment } from "./load-google-credential.mjs";
+
+const localEnvFile = fileURLToPath(new URL("../.env.local", import.meta.url));
+if (existsSync(localEnvFile)) process.loadEnvFile(localEnvFile);
+loadGoogleCredentialIntoEnvironment();
 
 const [command, ...args] = process.argv.slice(2);
 if (!["dev", "build"].includes(command)) throw new Error("Expected dev or build.");
