@@ -14,6 +14,19 @@ export const metadata: Metadata = {
   title: "Programa de Indicações",
   description:
     "Formulário de indicação de clientes e agendamento comercial.",
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nosnippet: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noarchive: true,
+      nosnippet: true,
+      noimageindex: true,
+    },
+  },
   openGraph: {
     title: "Programa de Indicações",
     description: "Formulário do programa de indicações.",

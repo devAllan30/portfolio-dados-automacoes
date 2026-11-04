@@ -12,10 +12,13 @@ import {
   type EmpresaRd,
   type NegociacaoRd,
 } from "../../../lib/rd-station-v2";
+import { negociacaoPertenceEmpresaEFunil } from "../../../lib/correspondencia-rd";
 import { formatarDocumentoParceiro } from "../../../lib/documento-parceiro";
 import {
   dataAgendamentoValida,
   dataEhFimDeSemana,
+  dataHoraAgendamento,
+  formatarDataHoraRd,
 } from "../../../lib/data-agendamento";
 import {
   decidirAcaoNegociacaoAgendamento,
@@ -33,26 +36,29 @@ import {
 } from "../../../lib/google-calendar";
 
 const ID_CAMPO_PARCEIRO_EMPRESA =
-  process.env.RD_CAMPO_PARCEIRO_EMPRESA?.trim() || "";
+  process.env.RD_CAMPO_PARCEIRO_EMPRESA?.trim() || "6a70e4269f35a6002fcf7936";
 const ID_CAMPO_CONSULTOR_NEGOCIACAO =
-  process.env.RD_CAMPO_CONSULTOR_NEGOCIACAO?.trim() || "";
+  process.env.RD_CAMPO_CONSULTOR_NEGOCIACAO?.trim() || "679294da974d290014ec0261";
 const ID_CAMPO_PRE_VENDEDOR_SSTB2B =
-  process.env.RD_CAMPO_PRE_VENDEDOR_B2B?.trim() || "";
+  process.env.RD_CAMPO_PRE_VENDEDOR_B2B?.trim() || "6878fdd3149ecd001a92e2d1";
 const OPCAO_PRE_VENDEDOR_ECOSSISTEMA =
-  process.env.RD_OPCAO_PRE_VENDEDOR_B2B?.trim() || "";
+  process.env.RD_OPCAO_PRE_VENDEDOR_B2B?.trim() || "ECOSSISTEMA QUALITYCERT";
 const ID_CAMPO_QUANTIDADE_CLIENTES =
-  process.env.RD_CAMPO_QUANTIDADE_CLIENTES?.trim() || "";
+  process.env.RD_CAMPO_QUANTIDADE_CLIENTES?.trim() || "676050a256e2c40014d39dab";
 const ID_CAMPO_CURVA_PARCEIRO =
-  process.env.RD_CAMPO_CURVA_PARCEIRO?.trim() || "";
+  process.env.RD_CAMPO_CURVA_PARCEIRO?.trim() || "686d57066929a30014360a6d";
 const ID_CAMPO_SETOR_PARCEIRO =
-  process.env.RD_CAMPO_SETOR_PARCEIRO?.trim() || "";
+  process.env.RD_CAMPO_SETOR_PARCEIRO?.trim() || "6878fca28d37b80019eb8b2c";
 const ID_CAMPO_DOCUMENTO_PARCEIRO =
-  process.env.RD_CAMPO_DOCUMENTO_PARCEIRO?.trim() || "";
-const ID_FUNIL_AGENDAMENTO = process.env.RD_FUNIL_AGENDAMENTO?.trim() || "";
-const ID_ETAPA_NOVO_LEAD = process.env.RD_ETAPA_AGENDAMENTO?.trim() || "";
-const ID_EQUIPE_CLOSER_SST = process.env.RD_EQUIPE_CLOSER?.trim() || "";
+  process.env.RD_CAMPO_DOCUMENTO_PARCEIRO?.trim() || "68950534cb10310017cf2cd1";
+const ID_FUNIL_AGENDAMENTO =
+  process.env.RD_FUNIL_AGENDAMENTO?.trim() || "678fab56b5999f0014422fe8";
+const ID_ETAPA_NOVO_LEAD =
+  process.env.RD_ETAPA_AGENDAMENTO?.trim() || "678fab56b5999f0014422fec";
+const ID_EQUIPE_CLOSER_SST =
+  process.env.RD_EQUIPE_CLOSER?.trim() || "679294fc3e41190018178cb4";
 const ID_CAMPANHA_AGENDAMENTO =
-  process.env.RD_CAMPANHA_AGENDAMENTO?.trim() || "";
+  process.env.RD_CAMPANHA_AGENDAMENTO?.trim() || "6878e1ee4f255f00018a0bf7";
 const ASSUNTO_REUNIAO = "Reunião Sst";
 const ASSUNTO_TENTATIVA_AGENDAMENTO = "Tentativa de Agendamento de Reunião";
 const EMAIL_BOT_TRANSCRICAO = "meetbot@meetgeek.ai";
@@ -195,20 +201,6 @@ async function cancelarEventoGoogleSemInterromper(
       codigo: erro instanceof ErroGoogleAgenda ? erro.codigo : null,
     });
   }
-}
-
-function dataHoraDaReuniao(data: string, horario: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || !/^\d{2}:\d{2}$/.test(horario)) {
-    return null;
-  }
-
-  const dataHora = new Date(`${data}T${horario}:00-03:00`);
-  if (Number.isNaN(dataHora.getTime())) return null;
-  return dataHora;
-}
-
-function dataHoraComFusoRd(data: string, horario: string) {
-  return `${data}T${horario}:00.000-03:00`;
 }
 
 function formatarDataHoraBrasil(data: Date) {
@@ -368,7 +360,7 @@ export async function GET(requisicao: Request) {
       .filter(
         (item) =>
           item.responsaveis.length > 0 &&
-          (dataHoraDaReuniao(data, item.horario)?.getTime() ?? 0) > agora,
+          (dataHoraAgendamento(data, item.horario)?.getTime() ?? 0) > agora,
       )
       .map((item) => item.horario);
 
@@ -540,9 +532,7 @@ export async function POST(requisicao: Request) {
     );
   }
 
-  const dataHora = dataAgendamentoValida(dataReuniao)
-    ? dataHoraDaReuniao(dataReuniao, horarioReuniao)
-    : null;
+  const dataHora = dataHoraAgendamento(dataReuniao, horarioReuniao);
   if (!dataHora) {
     return NextResponse.json(
       { mensagem: "Informe uma data e um horário válidos para a reunião." },
@@ -580,7 +570,13 @@ export async function POST(requisicao: Request) {
     );
   }
 
-  const dataHoraRd = dataHoraComFusoRd(dataReuniao, horarioReuniao);
+  const dataHoraRd = formatarDataHoraRd(dataHora);
+  if (!dataHoraRd) {
+    return NextResponse.json(
+      { mensagem: "A data e o horário informados são inválidos." },
+      { status: 400 },
+    );
+  }
 
   const siglaBanco = idParceiro.endsWith("_D") ? "D" : "Q";
   const idParceiroBase = idParceiro.slice(0, -2);
@@ -622,6 +618,17 @@ export async function POST(requisicao: Request) {
         negociacaoLocalizada = await rd.obterNegociacao(negociacoes[0].id);
 
         if (
+          !negociacaoPertenceEmpresaEFunil(
+            negociacaoLocalizada,
+            empresasLocalizadas[0].id,
+            ID_FUNIL_AGENDAMENTO,
+          )
+        ) {
+          negociacaoLocalizada = null;
+        }
+
+        if (
+          negociacaoLocalizada &&
           decidirAcaoNegociacaoAgendamento(negociacaoLocalizada) ===
           "parceiro_ja_sst"
         ) {
@@ -636,6 +643,7 @@ export async function POST(requisicao: Request) {
         }
 
         if (
+          negociacaoLocalizada &&
           negociacaoLocalizada.status === "ongoing" &&
           negociacaoLocalizada.stage_id
         ) {
@@ -661,7 +669,9 @@ export async function POST(requisicao: Request) {
             const responsavelNegociacao = await rd.obterUsuario(
               idResponsavelNegociacao,
             );
-            const dataContato = new Date(Date.now() + 10 * 60_000);
+            const dataContato = new Date(
+              Date.now() + ANTECEDENCIA_MINIMA_MINUTOS * 60_000,
+            );
             const tarefa = await rd.criarTarefaContato({
               idNegociacao: negociacaoLocalizada.id,
               nome: ASSUNTO_TENTATIVA_AGENDAMENTO,
@@ -669,7 +679,7 @@ export async function POST(requisicao: Request) {
                 dataContato,
                 consultor,
               ),
-              dataHoraIso: dataContato.toISOString(),
+              dataHoraIso: formatarDataHoraRd(dataContato)!,
               idCriador: idResponsavelNegociacao,
               idsResponsaveis: [idResponsavelNegociacao],
             });
@@ -987,7 +997,6 @@ export async function POST(requisicao: Request) {
       contatoRdId: contatoCriado?.id,
       negociacaoRdId: negociacao.id,
       tipoEcossistema: "Qualitycert",
-      idTarefaRd: tarefa.id,
       idTarefaGoogleAgenda: reservaGoogle.id,
     });
 
@@ -1044,6 +1053,9 @@ export async function POST(requisicao: Request) {
       empresaRdId: empresa.id,
       contatoRdId: contatoCriado?.id,
       negociacaoRdId: negociacao.id,
+      tipoEcossistema: "Qualitycert",
+      idTarefaRd: tarefa.id,
+      idTarefaGoogleAgenda: reservaGoogle.id,
     });
 
     return NextResponse.json(

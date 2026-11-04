@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 import { importPKCS8, SignJWT } from "jose";
+import { dataHoraAgendamento } from "./data-agendamento";
 
 const ESCOPO_DISPONIBILIDADE =
   "https://www.googleapis.com/auth/calendar.freebusy";
@@ -318,8 +319,8 @@ export function usuariosRdComAgenda(
 }
 
 function dataHora(data: string, horario: string) {
-  const resultado = new Date(`${data}T${horario}:00-03:00`);
-  if (Number.isNaN(resultado.getTime())) {
+  const resultado = dataHoraAgendamento(data, horario);
+  if (!resultado) {
     throw new ErroGoogleAgenda(
       "A data ou o horário informado é inválido.",
       "DATA_HORA_INVALIDA",

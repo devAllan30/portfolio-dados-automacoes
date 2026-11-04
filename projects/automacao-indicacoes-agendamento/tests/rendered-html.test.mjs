@@ -210,6 +210,98 @@ test("aplica as regras de negocio conforme status e etapa da negociacao", async 
   );
 });
 
+test("ignora empresas e negociacoes que nao correspondem exatamente ao parceiro", async () => {
+  const {
+    empresaCorrespondeAoIdParceiro,
+    negociacaoPertenceEmpresaEFunil,
+  } = await import("../lib/correspondencia-rd.ts");
+
+  assert.equal(
+    empresaCorrespondeAoIdParceiro(
+      { custom_fields: { id_parceiro: "110126_Q" } },
+      "id_parceiro",
+      "110126_Q",
+    ),
+    true,
+  );
+  assert.equal(
+    empresaCorrespondeAoIdParceiro(
+      { custom_fields: { id_parceiro: "22_D" } },
+      "id_parceiro",
+      "110126_Q",
+    ),
+    false,
+  );
+  assert.equal(
+    empresaCorrespondeAoIdParceiro(
+      { custom_fields: {} },
+      "id_parceiro",
+      "110126_Q",
+    ),
+    false,
+  );
+
+  const correta = {
+    organization_id: "empresa-correta",
+    pipeline_id: "funil-correto",
+  };
+  assert.equal(
+    negociacaoPertenceEmpresaEFunil(
+      correta,
+      "empresa-correta",
+      "funil-correto",
+    ),
+    true,
+  );
+  assert.equal(
+    negociacaoPertenceEmpresaEFunil(
+      correta,
+      "outra-empresa",
+      "funil-correto",
+    ),
+    false,
+  );
+  assert.equal(
+    negociacaoPertenceEmpresaEFunil(
+      correta,
+      "empresa-correta",
+      "outro-funil",
+    ),
+    false,
+  );
+});
+
+test("usa o mesmo instante no formulario, Google Agenda e tarefa do RD", async () => {
+  const { dataHoraAgendamento, formatarDataHoraRd } = await import(
+    "../lib/data-agendamento.ts"
+  );
+  const dataHora = dataHoraAgendamento("2026-11-05", "08:30");
+
+  assert.ok(dataHora);
+  assert.equal(dataHora.toISOString(), "2026-11-05T11:30:00.000Z");
+  assert.equal(
+    formatarDataHoraRd(dataHora),
+    "2026-11-05T08:30:00.000-03:00",
+  );
+  assert.equal(dataHoraAgendamento("2026-11-05", "25:00"), null);
+});
+
+test("bloqueia a indexacao do formulario nos buscadores", async () => {
+  const [layout, worker, robots] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
+    readFile(new URL("../public/robots.txt", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(layout, /robots:\s*\{/);
+  assert.match(layout, /index:\s*false/);
+  assert.match(layout, /follow:\s*false/);
+  assert.match(worker, /X-Robots-Tag/);
+  assert.match(worker, /noindex, nofollow, noarchive, nosnippet, noimageindex/);
+  assert.match(robots, /User-agent:\s*\*/);
+  assert.match(robots, /Disallow:\s*\//);
+});
+
 test("mantem a configuracao do dominio oficial e do inicio de producao", async () => {
   const [
     layout,
@@ -360,7 +452,20 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
   assert.match(apiAgendamentos, /NEGOCIACAO_EM_ANDAMENTO/);
   assert.match(apiAgendamentos, /TAREFA DE CONTATO CRIADA NO RD CRM/);
   assert.match(apiAgendamentos, /COMUNICAR O COORDENADOR SST/);
-  assert.match(apiAgendamentos, /Date\.now\(\) \+ 10 \* 60_000/);
+  assert.match(
+    apiAgendamentos,
+    /Date\.now\(\) \+ ANTECEDENCIA_MINIMA_MINUTOS \* 60_000/,
+  );
+  assert.match(
+    apiAgendamentos,
+    /RD_EQUIPE_CLOSER\?\.trim\(\) \|\| "679294fc3e41190018178cb4"/,
+  );
+  assert.match(apiAgendamentos, /const dataHoraRd = formatarDataHoraRd\(dataHora\)/);
+  assert.ok(
+    apiAgendamentos.indexOf("idTarefaRd: tarefa.id") >
+      apiAgendamentos.indexOf("const tarefa = await rd.criarTarefaReuniao"),
+    "O ID da tarefa só pode ser salvo depois que a tarefa for criada.",
+  );
   assert.match(clienteRd, /async criarTarefaContato/);
   assert.match(clienteRd, /type:\s*"task"/);
   assert.match(formularioAgendamento, /tituloErro/);
@@ -386,11 +491,13 @@ test("mantem a configuracao do dominio oficial e do inicio de producao", async (
   );
   assert.match(apiAgendamentos, /status === "lost"/);
   assert.match(apiAgendamentos, /montarAnotacaoNegociacaoExistente/);
+  assert.match(apiAgendamentos, /dataHoraAgendamento\(dataReuniao, horarioReuniao\)/);
+  assert.match(dataAgendamento, /`\$\{data\}T\$\{horario\}:00-03:00`/);
+  assert.match(apiAgendamentos, /dataHoraIso:\s*dataHoraRd/);
   assert.match(
     apiAgendamentos,
-    /return `\$\{data\}T\$\{horario\}:00\.000-03:00`/,
+    /dataHoraIso:\s*formatarDataHoraRd\(dataContato\)!/,
   );
-  assert.match(apiAgendamentos, /dataHoraIso:\s*dataHoraRd/);
   assert.match(clienteRd, /due_date:\s*dados\.dataHoraIso/);
   assert.match(
     apiAgendamentos,

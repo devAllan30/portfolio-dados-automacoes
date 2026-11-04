@@ -1,4 +1,8 @@
 import { obterAccessTokenRd } from "./banco-oauth-rd";
+import {
+  empresaCorrespondeAoIdParceiro,
+  negociacaoPertenceEmpresaEFunil,
+} from "./correspondencia-rd";
 
 const URL_BASE_RD = "https://api.rd.services/crm/v2";
 const ID_CAMPANHA_INDICACOES =
@@ -222,7 +226,9 @@ export class ClienteRdV2 {
     const resposta = await this.executar<EmpresaRd[]>(
       `/organizations?${parametros.toString()}`,
     );
-    return resposta.data ?? [];
+    return (resposta.data ?? []).filter((empresa) =>
+      empresaCorrespondeAoIdParceiro(empresa, slugCampo, valor),
+    );
   }
 
   private async obterIdSegmentoEcossistema() {
@@ -314,7 +320,9 @@ export class ClienteRdV2 {
     const resposta = await this.executar<NegociacaoRd[]>(
       `/deals?${parametros.toString()}`,
     );
-    return resposta.data ?? [];
+    return (resposta.data ?? []).filter((negociacao) =>
+      negociacaoPertenceEmpresaEFunil(negociacao, idEmpresa, idFunil),
+    );
   }
 
   async obterNegociacao(idNegociacao: string) {
