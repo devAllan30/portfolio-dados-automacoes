@@ -115,7 +115,13 @@ type SstStatus =
         time: string;
       };
     }
-  | { type: "error"; message: string };
+  | {
+      type: "error";
+      message: string;
+      title?: string;
+      reasons?: string[];
+      taskId?: string;
+    };
 
 const initialValues: FormValues = {
   consultant: "",
@@ -194,7 +200,11 @@ async function postDeal(values: FormValues, consultantReference: string) {
   if (!result.id || !result.summary) {
     throw new Error("A indicação foi processada, mas o RD Station não retornou o resumo completo.");
   }
-  return result;
+  return {
+    ...result,
+    id: result.id,
+    summary: result.summary,
+  };
 }
 
 export default function Home({ consultantReference = "" }: { consultantReference?: string }) {
