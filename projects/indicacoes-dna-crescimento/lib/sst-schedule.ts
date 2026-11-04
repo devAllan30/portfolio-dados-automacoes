@@ -46,6 +46,76 @@ function getSaoPauloParts(date: Date) {
   };
 }
 
+function numericOffset(minutes: number) {
+  const sign = minutes < 0 ? "-" : "+";
+  const absolute = Math.abs(minutes);
+  return `${sign}${String(Math.floor(absolute / 60)).padStart(2, "0")}:${String(
+    absolute % 60,
+  ).padStart(2, "0")}`;
+}
+
+export function getSstScheduleInstant(dateValue: string, time: string) {
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateValue);
+  const timeMatch = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!dateMatch || !timeMatch) {
+    throw new Error("A data ou o horário informado é inválido.");
+  }
+
+  const target = {
+    year: Number(dateMatch[1]),
+    month: Number(dateMatch[2]),
+    day: Number(dateMatch[3]),
+    hour: Number(timeMatch[1]),
+    minute: Number(timeMatch[2]),
+    second: 0,
+  };
+  const targetAsUtc = Date.UTC(
+    target.year,
+    target.month - 1,
+    target.day,
+    target.hour,
+    target.minute,
+    target.second,
+  );
+  let instantMs = targetAsUtc;
+
+  // Resolve o horário de parede de São Paulo sem depender do fuso do servidor.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const observed = getSaoPauloParts(new Date(instantMs));
+    const observedAsUtc = Date.UTC(
+      observed.year,
+      observed.month - 1,
+      observed.day,
+      observed.hour,
+      observed.minute,
+      observed.second,
+    );
+    const correction = targetAsUtc - observedAsUtc;
+    instantMs += correction;
+    if (correction === 0) break;
+  }
+
+  const date = new Date(instantMs);
+  const confirmed = getSaoPauloParts(date);
+  if (
+    confirmed.year !== target.year ||
+    confirmed.month !== target.month ||
+    confirmed.day !== target.day ||
+    confirmed.hour !== target.hour ||
+    confirmed.minute !== target.minute
+  ) {
+    throw new Error("Não foi possível converter o horário para America/Sao_Paulo.");
+  }
+
+  const offsetMinutes = Math.round((targetAsUtc - instantMs) / 60_000);
+  return {
+    date,
+    iso: date.toISOString(),
+    rfc3339: `${dateValue}T${time}:00${numericOffset(offsetMinutes)}`,
+    timeZone: SST_TIME_ZONE,
+  };
+}
+
 function dateKeyFromUtcDate(date: Date) {
   return [
     String(date.getUTCFullYear()).padStart(4, "0"),
@@ -125,9 +195,12 @@ export function validateSstSchedule(dateValue: string, time: string, now = new D
     throw new Error("O horário não está disponível ou não respeita a antecedência mínima de 15 minutos.");
   }
 
+  const instant = getSstScheduleInstant(dateValue, time);
+
   return {
     date,
     time: availableTime,
+    instant,
     timeZone: SST_TIME_ZONE,
     meetingDurationMinutes: SST_MEETING_DURATION_MINUTES,
     minimumNoticeMinutes: SST_MINIMUM_NOTICE_MINUTES,
