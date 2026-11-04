@@ -46,8 +46,8 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
-  await endManagerSession(request);
+export async function DELETE() {
+  await endManagerSession();
   const response = NextResponse.json({ signedOut: true });
   response.cookies.set(MANAGER_SESSION_COOKIE, "", {
     httpOnly: true,
