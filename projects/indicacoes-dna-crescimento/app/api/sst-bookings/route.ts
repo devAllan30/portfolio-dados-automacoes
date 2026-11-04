@@ -466,9 +466,8 @@ export async function POST(request: Request) {
         }
         rdTaskId = await createRdMeetingTask({
           dealId: targetDeal.id,
-          dueDateIso: new Date(
-            `${submission.date}T${submission.time}:00-03:00`,
-          ).toISOString(),
+          // O RD recebe exatamente o instante confirmado pelo Google Agenda.
+          dueDateIso: reservation.scheduledAt,
           responsibleId: closer.id,
           description: eventDescription({
             companyName,
