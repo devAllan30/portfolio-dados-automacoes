@@ -5,6 +5,16 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://indicacoes.napraticaclub.com.br"),
   title: "Indicações · DNA Crescimento",
   description: "Formulário de indicações integrado ao RD Station CRM.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

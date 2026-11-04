@@ -1,42 +1,33 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { projectRoot } from "./sites-env.mjs";
-import { loadGoogleCredentialIntoEnvironment } from "./load-google-credential.mjs";
-
-loadGoogleCredentialIntoEnvironment();
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const host = process.env.APP_HOST?.trim() || "127.0.0.1";
-const port = Number(process.env.APP_PORT || "4318");
+const port = Number(process.env.APP_PORT || "4320");
 
 if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
   throw new Error("APP_PORT precisa ser uma porta válida.");
 }
 
-const wrangler = fileURLToPath(
-  new URL("../node_modules/wrangler/bin/wrangler.js", import.meta.url),
+const next = fileURLToPath(
+  new URL("../node_modules/next/dist/bin/next", import.meta.url),
 );
-const envFile = fileURLToPath(new URL("../.env.local", import.meta.url));
 const child = spawn(
   process.execPath,
   [
-    wrangler,
-    "dev",
-    "--config",
-    "dist/server/wrangler.json",
-    "--local",
-    "--persist-to",
-    ".wrangler/state",
-    "--env-file",
-    envFile,
-    "--ip",
+    next,
+    "start",
+    "--hostname",
     host,
     "--port",
     String(port),
-    "--inspector-port",
-    "0",
   ],
-  { cwd: projectRoot, env: process.env, stdio: "inherit" },
+  {
+    cwd: projectRoot,
+    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" },
+    stdio: "inherit",
+  },
 );
 
 for (const signal of ["SIGINT", "SIGTERM"]) {

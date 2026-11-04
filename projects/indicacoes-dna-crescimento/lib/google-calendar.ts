@@ -2,6 +2,12 @@ import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
 import { importPKCS8, SignJWT } from "jose";
+import {
+  getSstScheduleInstant,
+  SST_MEETING_DURATION_MINUTES,
+  SST_MINIMUM_NOTICE_MINUTES,
+  SST_TIME_ZONE,
+} from "@/lib/sst-schedule";
 
 const CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/calendar.freebusy",
@@ -9,10 +15,9 @@ const CALENDAR_SCOPES = [
 ] as const;
 const MEET_SETTINGS_SCOPE =
   "https://www.googleapis.com/auth/meetings.space.settings";
-const TIME_ZONE =
-  process.env.GOOGLE_CALENDAR_TIMEZONE?.trim() || "America/Sao_Paulo";
-const MEETING_DURATION_MINUTES = 30;
-const MINIMUM_NOTICE_MINUTES = 15;
+const TIME_ZONE = process.env.GOOGLE_CALENDAR_TIMEZONE?.trim() || SST_TIME_ZONE;
+const MEETING_DURATION_MINUTES = SST_MEETING_DURATION_MINUTES;
+const MINIMUM_NOTICE_MINUTES = SST_MINIMUM_NOTICE_MINUTES;
 const EVENT_ORIGIN = "indicacao-ecossistema-sst";
 
 export const GOOGLE_CALENDAR_TIMES = Array.from({ length: 19 }, (_, index) => {
@@ -48,6 +53,8 @@ type GoogleEvent = {
   id?: string;
   htmlLink?: string;
   hangoutLink?: string;
+  start?: { dateTime?: string; timeZone?: string };
+  end?: { dateTime?: string; timeZone?: string };
   attendees?: Array<{ email?: string }>;
   conferenceData?: {
     entryPoints?: Array<{ entryPointType?: string; uri?: string }>;
@@ -64,6 +71,8 @@ export type GoogleReservation = {
   eventLink?: string;
   meetLink: string;
   ownerEmail: string;
+  scheduledAt: string;
+  scheduledAtIso: string;
 };
 
 export class GoogleCalendarError extends Error {
@@ -93,7 +102,9 @@ function credentialPath() {
       "GOOGLE_CREDENTIAL_MISSING",
     );
   }
-  return isAbsolute(configured) ? configured : resolve(process.cwd(), configured);
+  return isAbsolute(configured)
+    ? configured
+    : resolve(/* turbopackIgnore: true */ process.cwd(), configured);
 }
 
 async function loadCredentials() {
@@ -255,14 +266,14 @@ async function googleRequest<T>(
 }
 
 function dateTime(date: string, time: string) {
-  const result = new Date(`${date}T${time}:00-03:00`);
-  if (Number.isNaN(result.getTime())) {
+  try {
+    return getSstScheduleInstant(date, time).date;
+  } catch {
     throw new GoogleCalendarError(
       "A data ou o horário informado é inválido.",
       "INVALID_DATE_TIME",
     );
   }
-  return result;
 }
 
 function isFree(start: Date, end: Date, busyIntervals: BusyInterval[]) {
@@ -417,7 +428,8 @@ export async function createGoogleEvent(data: {
   description: string;
   bookingId: number;
 }) {
-  const start = dateTime(data.date, data.time);
+  const schedule = getSstScheduleInstant(data.date, data.time);
+  const start = schedule.date;
   const end = new Date(start.getTime() + MEETING_DURATION_MINUTES * 60_000);
   const participantEmails = Array.from(
     new Set(
@@ -436,7 +448,7 @@ export async function createGoogleEvent(data: {
       summary: `Apresentação Ecossistema Na Prática - QUALITYSST - ${data.companyName}`,
       description: data.description,
       attendees: participantEmails.map((email) => ({ email })),
-      start: { dateTime: start.toISOString(), timeZone: TIME_ZONE },
+      start: { dateTime: schedule.rfc3339, timeZone: TIME_ZONE },
       end: { dateTime: end.toISOString(), timeZone: TIME_ZONE },
       transparency: "opaque",
       conferenceData: {
@@ -462,6 +474,14 @@ export async function createGoogleEvent(data: {
   }
 
   try {
+    const confirmedStart = Date.parse(event.start?.dateTime ?? "");
+    if (!Number.isFinite(confirmedStart) || confirmedStart !== start.getTime()) {
+      throw new GoogleCalendarError(
+        "O Google Agenda confirmou um horário diferente do selecionado.",
+        "GOOGLE_EVENT_TIME_MISMATCH",
+        `esperado=${schedule.iso} confirmado=${event.start?.dateTime ?? "ausente"}`,
+      );
+    }
     const link = await waitForMeetLink(data.owner.email, event.id, event);
     await configureOpenMeet(data.owner.email, link).catch((error) => {
       console.warn("Não foi possível configurar o Meet como acesso aberto.", {
@@ -473,6 +493,8 @@ export async function createGoogleEvent(data: {
       eventLink: event.htmlLink,
       meetLink: link,
       ownerEmail: data.owner.email,
+      scheduledAt: schedule.rfc3339,
+      scheduledAtIso: schedule.iso,
     } satisfies GoogleReservation;
   } catch (error) {
     await googleRequest<unknown>(data.owner.email, {
