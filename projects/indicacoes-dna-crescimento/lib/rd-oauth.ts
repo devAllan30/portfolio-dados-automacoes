@@ -231,7 +231,7 @@ export async function createRdMeetingTask(data: {
   responsibleId: string;
   description: string;
 }) {
-  const task = await rdV2Request<{ id?: string }>("/tasks", {
+  const task = await rdV2Request<RdTaskV2>("/tasks", {
     method: "POST",
     body: JSON.stringify({
       data: {
@@ -247,7 +247,35 @@ export async function createRdMeetingTask(data: {
     }),
   });
   if (!task.id) throw new RdOAuthError("O RD não retornou o ID da tarefa criada.");
-  return task.id;
+  let confirmedTask = await confirmRdTask(task.id);
+  const expectedTime = Date.parse(data.dueDateIso);
+  const confirmedTime = () => Date.parse(confirmedTask.due_date ?? "");
+
+  if (!Number.isFinite(expectedTime) || confirmedTime() !== expectedTime) {
+    await rdV2Request<RdTaskV2>(`/tasks/${encodeURIComponent(task.id)}`, {
+      method: "PUT",
+      body: JSON.stringify({ data: { due_date: data.dueDateIso } }),
+    });
+    confirmedTask = await confirmRdTask(task.id);
+  }
+
+  if (confirmedTime() !== expectedTime) {
+    await rdV2Request<RdTaskV2>(`/tasks/${encodeURIComponent(task.id)}`, {
+      method: "PUT",
+      body: JSON.stringify({ data: { status: "canceled" } }),
+    }).catch(() => undefined);
+    throw new RdOAuthError(
+      "O RD confirmou a tarefa em um horário diferente do Google Agenda.",
+      undefined,
+      `esperado=${data.dueDateIso} confirmado=${confirmedTask.due_date ?? "ausente"}`,
+    );
+  }
+
+  console.info("Horário da reunião confirmado no RD Station.", {
+    taskId: confirmedTask.id,
+    dueDate: confirmedTask.due_date,
+  });
+  return confirmedTask.id;
 }
 
 export async function findLatestOrganizationDealInPipeline(
