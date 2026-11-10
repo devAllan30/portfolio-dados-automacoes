@@ -1,7 +1,15 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const environmentFile = fileURLToPath(
+  new URL("../.env.local", import.meta.url),
+);
+
+if (existsSync(environmentFile)) {
+  process.loadEnvFile(environmentFile);
+}
 
 const host = process.env.APP_HOST?.trim() || "127.0.0.1";
 const port = Number(process.env.APP_PORT || "4320");
@@ -41,3 +49,4 @@ child.on("exit", (code, signal) => {
   if (signal) process.kill(process.pid, signal);
   process.exit(code ?? 1);
 });
+

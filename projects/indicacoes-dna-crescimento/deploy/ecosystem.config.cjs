@@ -1,20 +1,17 @@
-const projectRoot = `${__dirname}\\..`;
-
 module.exports = {
   apps: [
     {
       name: "indicacoes-napratica",
-      cwd: projectRoot,
+      cwd: `${__dirname}/..`,
       script: "scripts/start-production.mjs",
       interpreter: "node",
-      node_args: "--env-file=.env.local",
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: "500M",
       env: {
         NODE_ENV: "production",
       },
-      autorestart: true,
-      max_restarts: 10,
-      restart_delay: 5000,
-      time: true,
     },
   ],
 };
+

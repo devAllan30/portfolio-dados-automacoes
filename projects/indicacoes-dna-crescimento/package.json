@@ -10,7 +10,7 @@
     "dev": "node scripts/run-framework.mjs dev",
     "build": "next build",
     "build:sites": "node scripts/run-framework.mjs build",
-    "start": "node --env-file=.env.local scripts/start-production.mjs",
+    "start": "node scripts/start-production.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
@@ -71,3 +71,4 @@
     }
   }
 }
+
