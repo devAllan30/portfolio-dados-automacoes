@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "node scripts/iniciar-desenvolvimento.mjs",
-    "build": "vinext build",
+    "build": "vinext build && node scripts/copiar-webconfig-iis.mjs",
     "start": "node scripts/iniciar-producao.mjs",
     "test": "pnpm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",

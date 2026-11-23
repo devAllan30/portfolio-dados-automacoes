@@ -49,6 +49,20 @@ erro, em vez de concluir um agendamento no qual o bot poderia ficar bloqueado.
    pm2 status
    ```
 
+   O comando de build copia automaticamente `deploy/windows/web.config` para
+   `dist/client/web.config`, que e a pasta fisica publicada pelo IIS. A regra
+   deixa o IIS servir CSS, JavaScript, imagens e fontes existentes e encaminha
+   paginas e APIs para `127.0.0.1:4318`.
+
+   Confirme a copia antes de iniciar o processo:
+
+   ```powershell
+   Test-Path .\dist\client\web.config
+   ```
+
+   O resultado deve ser `True`. Nao execute `iisreset`; o IIS aplica a
+   configuracao do arquivo automaticamente.
+
 4. Confirme que `automacao-indicacoes` aparece com o status `online`.
 
 ## Manter ativo depois de reiniciar o Windows
