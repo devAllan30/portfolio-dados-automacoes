@@ -1,0 +1,1200 @@
+{
+  "name": "RD - Publicar link do formulário na negociação",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rd-deal-created",
+        "options": {
+          "responseCode": {
+            "values": {}
+          }
+        }
+      },
+      "id": "b70f28f8-ade0-47b6-bd01-f53c0bfd7521",
+      "name": "Receber negociação criada (RD)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "event_name",
+              "type": "string",
+              "value": "={{ $json.body.event_name }}"
+            },
+            {
+              "id": "a2",
+              "name": "transaction_uuid",
+              "type": "string",
+              "value": "={{ $json.body.transaction_uuid }}"
+            },
+            {
+              "id": "a3",
+              "name": "deal_id",
+              "type": "string",
+              "value": "={{ $json.body.document?.id }}"
+            },
+            {
+              "id": "a4",
+              "name": "pipeline_id",
+              "type": "string",
+              "value": "={{ $json.body.document?.deal_pipeline?.id ?? $json.body.document?.pipeline_id ?? \"\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4b373996-80ba-415b-9b69-1bebb5bbdf2b",
+      "name": "Extrair dados do evento",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        272,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.event_name }}",
+              "rightValue": "crm_deal_created",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ [\"678fab56b5999f0014422fe8\"].includes($json.pipeline_id) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "aa216162-5712-47f3-a9fe-6c9617bcdc2b",
+      "name": "Evento e funil válidos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "CONFIGURE_DATA_TABLE_ID",
+          "cachedResultName": "rd_webhook_deals"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "transaction_uuid",
+              "keyValue": "={{ $json.transaction_uuid }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "id": "8e657891-017e-4d1a-9a3d-ec0d10290029",
+      "name": "Buscar evento já registrado",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        128
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "40f562e5-e822-4a13-b6e2-c13683486ba8",
+      "name": "Evento novo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "CONFIGURE_DATA_TABLE_ID",
+          "cachedResultName": "rd_webhook_deals"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "transaction_uuid": "={{ $('Extrair dados do evento').item.json.transaction_uuid }}",
+            "deal_id": "={{ $('Extrair dados do evento').item.json.deal_id }}",
+            "pipeline_id": "={{ $('Extrair dados do evento').item.json.pipeline_id }}",
+            "status": "received",
+            "received_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "transaction_uuid",
+              "displayName": "transaction_uuid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "deal_id",
+              "displayName": "deal_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "pipeline_id",
+              "displayName": "pipeline_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "note_id",
+              "displayName": "note_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "attempts",
+              "displayName": "attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "fa446d2e-499a-48f9-bd9f-2c4aad0f15d6",
+      "name": "Registrar evento recebido",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "deal_id",
+              "type": "string",
+              "value": "={{ $('Extrair dados do evento').item.json.deal_id }}"
+            },
+            {
+              "id": "b2",
+              "name": "transaction_uuid",
+              "type": "string",
+              "value": "={{ $('Extrair dados do evento').item.json.transaction_uuid }}"
+            },
+            {
+              "id": "b3",
+              "name": "form_url",
+              "type": "string",
+              "value": "={{ \"https://indicacao.qualitysst.com.br/pre-vendas/\" + $(\"Extrair dados do evento\").item.json.deal_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0c6f4cd7-5a7e-482f-8e03-38d4030029fb",
+      "name": "Montar link do formulário",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1600,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://crm.rdstation.com/api/v1/deals/{{ $('Montar link do formulário').first().json.deal_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "options": {}
+      },
+      "id": "df3f68cc-4724-42f2-b5a7-f9da7e956c1c",
+      "name": "V1 - Consultar negociação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1552,
+        528
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ($json.deal_custom_fields || []).find(c => [c.custom_field_id, c.custom_field?._id, c.custom_field?.id].includes(\"6afaf68330b2bb001da9f0fd\"))?.value === $(\"Montar link do formulário\").first().json.form_url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c84092d8-3c48-49de-9e19-00ff63d2f4f3",
+      "name": "Link já está correto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1776,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "CONFIGURE_DATA_TABLE_ID",
+          "cachedResultName": "rd_webhook_deals"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "transaction_uuid",
+              "keyValue": "={{ $('Montar link do formulário').first().json.transaction_uuid }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "completed",
+            "processed_at": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "99fbe5ec-c4d1-4425-91ea-5b552a08a676",
+      "name": "Marcar como concluído",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "deal_id",
+              "type": "string",
+              "value": "={{ $(\"Montar link do formulário\").first().json.deal_id }}"
+            },
+            {
+              "id": "f2",
+              "name": "form_url",
+              "type": "string",
+              "value": "={{ $(\"Montar link do formulário\").first().json.form_url }}"
+            },
+            {
+              "id": "f3",
+              "name": "deal_custom_fields_atualizados",
+              "type": "array",
+              "value": "={{ (() => { const ID = \"6afaf68330b2bb001da9f0fd\"; const idOf = c => c.custom_field_id ?? c.custom_field?._id ?? c.custom_field?.id; const atuais = ($(\"V1 - Consultar negociação\").first().json.deal_custom_fields || []).filter(c => idOf(c) && idOf(c) !== ID).map(c => ({ custom_field_id: idOf(c), value: c.value })); return [...atuais, { custom_field_id: ID, value: $(\"Montar link do formulário\").first().json.form_url }]; })() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "10857a76-1614-41db-92f0-2b2d826b9493",
+      "name": "Preparar campos para atualização",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2000,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://crm.rdstation.com/api/v1/deals/{{ $json.deal_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { deal: { deal_custom_fields: [ { custom_field_id: \"6afaf68330b2bb001da9f0fd\", value: \"https://indicacao.qualitysst.com.br/pre-vendas/\" + $json.deal_id } ] } } }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "5e1d6959-8784-42d2-951f-88377dd067b7",
+      "name": "V1 - Publicar link na negociação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1824,
+        224
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ [401, 403].includes(Number($json.statusCode)) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "df22e9ec-b478-4f22-a917-ca02d6cf73a3",
+      "name": "Token V1 recusado (401/403)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3728,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "k1",
+              "name": "message",
+              "type": "string",
+              "value": "O token da API V1 do RD está inválido ou sem permissão. Atualize a credencial RD Station CRM V1."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4802d935-e280-4c38-9d33-e01b0fe57b23",
+      "name": "Definir erro de token recusado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        4624,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "CONFIGURE_DATA_TABLE_ID",
+          "cachedResultName": "rd_webhook_deals"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "transaction_uuid",
+              "keyValue": "={{ $('Montar link do formulário').first().json.transaction_uuid }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "error",
+            "error_message": "={{ (() => { const e = $input.item.json[\"error\"]; return e && typeof e === \"object\" ? (e.message || JSON.stringify(e)) : (e || $input.item.json[\"message\"] || \"Erro desconhecido\"); })() }}",
+            "attempts": "={{ ($('Registrar evento recebido').first().json.attempts || 0) + 1 }}"
+          },
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "attempts",
+              "displayName": "attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d2afbf1a-0979-4bf3-9712-1210f77564b1",
+      "name": "Marcar como erro",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ Number($json.statusCode) >= 200 && Number($json.statusCode) < 300 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0795dffe-0d2a-47ba-9784-da417e5fd0d7",
+      "name": "Publicação aceita?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3952,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://crm.rdstation.com/api/v1/deals/{{ $('Montar link do formulário').first().json.deal_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "options": {}
+      },
+      "id": "f506d392-42f9-4676-b405-f16d261c05aa",
+      "name": "Reler negociação no RD",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2496,
+        416
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ($('Reler negociação no RD').first().json.deal_custom_fields || []).find(c => [c.custom_field_id, c.custom_field?._id, c.custom_field?.id].includes(\"6afaf68330b2bb001da9f0fd\"))?.value === $('Montar link do formulário').first().json.form_url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0560cb0d-e6c5-4c40-b713-e64905cb5049",
+      "name": "Campo confirmado pelo RD?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2496,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1",
+              "name": "message",
+              "type": "string",
+              "value": "RD não confirmou o preenchimento do campo de agendamento"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cb425363-df38-45a2-88c0-261a74c930ee",
+      "name": "Definir erro de confirmação",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2720,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ Number($json.statusCode) === 429 && $runIndex < 1 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4c7bd649-a36b-426b-a8be-16ded7070cc3",
+      "name": "Limite de requisições (429)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4176,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify($(\"Preparar campos para atualização\").first().json) }}",
+        "options": {}
+      },
+      "id": "92fea0c3-5ecb-4a00-a969-ad8af2e835ed",
+      "name": "Preparar nova tentativa",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        4400,
+        608
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "8580c35e-63c0-4ece-b483-613558a1bafd",
+      "name": "Aguardar 5 segundos",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4624,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "message",
+              "type": "string",
+              "value": "={{ (() => { const s = Number($json.statusCode); const b = $json.body; if (s === 422) { const has = v => v !== undefined && v !== null && v !== \"\" && !(typeof v === \"object\" && Object.keys(v).length === 0); const d = (b && typeof b === \"object\") ? (has(b.c_cf_errors) ? b.c_cf_errors : has(b.errors) ? b.errors : has(b.message) ? b.message : b) : b; return \"Body ou campo inválido (HTTP 422) ao preencher o link: \" + (typeof d === \"string\" ? d : JSON.stringify(d ?? \"\")).slice(0, 1000); } return (({ 404: \"Negociação não encontrada (HTTP 404)\", 429: \"Limite de requisições do RD atingido (HTTP 429)\" })[s] ?? (\"RD respondeu HTTP \" + $json.statusCode)) + \" ao preencher o link: \" + JSON.stringify(b ?? \"\").slice(0, 500); })() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a424e8ad-78e1-4143-afdc-840400bb2ce5",
+      "name": "Definir erro da publicação",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        4400,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "q1",
+              "name": "message",
+              "type": "string",
+              "value": "={{ (() => { const s = JSON.stringify($json); if (/(^|[^0-9])(401|403)([^0-9]|$)|Authorization failed|Forbidden/i.test(s)) return \"O token da API V1 do RD está inválido ou sem permissão. Atualize a credencial RD Station CRM V1.\"; if (/(^|[^0-9])404([^0-9]|$)|not found/i.test(s)) return \"Negociação não encontrada na API V1 do RD.\"; return \"Erro ao consultar a negociação na API V1 do RD: \" + s.slice(0, 500); })() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6c6a13fc-9b15-4552-aa30-d1c73ac4ead7",
+      "name": "Definir erro da consulta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3344,
+        1152
+      ]
+    }
+  ],
+  "connections": {
+    "Receber negociação criada (RD)": {
+      "main": [
+        [
+          {
+            "node": "Extrair dados do evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair dados do evento": {
+      "main": [
+        [
+          {
+            "node": "Evento e funil válidos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evento e funil válidos?": {
+      "main": [
+        [
+          {
+            "node": "Buscar evento já registrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar evento já registrado": {
+      "main": [
+        [
+          {
+            "node": "Evento novo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evento novo?": {
+      "main": [
+        [
+          {
+            "node": "Registrar evento recebido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar evento recebido": {
+      "main": [
+        [
+          {
+            "node": "Montar link do formulário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar link do formulário": {
+      "main": [
+        [
+          {
+            "node": "V1 - Consultar negociação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "V1 - Consultar negociação": {
+      "main": [
+        [
+          {
+            "node": "Link já está correto?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Definir erro da consulta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link já está correto?": {
+      "main": [
+        [
+          {
+            "node": "Marcar como concluído",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar campos para atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar campos para atualização": {
+      "main": [
+        [
+          {
+            "node": "V1 - Publicar link na negociação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "V1 - Publicar link na negociação": {
+      "main": [
+        [
+          {
+            "node": "Token V1 recusado (401/403)?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marcar como erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token V1 recusado (401/403)?": {
+      "main": [
+        [
+          {
+            "node": "Definir erro de token recusado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publicação aceita?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Definir erro de token recusado": {
+      "main": [
+        [
+          {
+            "node": "Marcar como erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publicação aceita?": {
+      "main": [
+        [
+          {
+            "node": "Reler negociação no RD",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limite de requisições (429)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reler negociação no RD": {
+      "main": [
+        [
+          {
+            "node": "Campo confirmado pelo RD?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marcar como erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campo confirmado pelo RD?": {
+      "main": [
+        [
+          {
+            "node": "Marcar como concluído",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Definir erro de confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Definir erro de confirmação": {
+      "main": [
+        [
+          {
+            "node": "Marcar como erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limite de requisições (429)?": {
+      "main": [
+        [
+          {
+            "node": "Preparar nova tentativa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Definir erro da publicação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar nova tentativa": {
+      "main": [
+        [
+          {
+            "node": "Aguardar 5 segundos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aguardar 5 segundos": {
+      "main": [
+        [
+          {
+            "node": "V1 - Publicar link na negociação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Definir erro da publicação": {
+      "main": [
+        [
+          {
+            "node": "Marcar como erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Definir erro da consulta": {
+      "main": [
+        [
+          {
+            "node": "Marcar como erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [
+    {
+      "id": "3b96d1db-c4ed-46ea-97dd-e7cc46994c28",
+      "name": "Validar evento recebido",
+      "nodeIds": [
+        "4b373996-80ba-415b-9b69-1bebb5bbdf2b",
+        "aa216162-5712-47f3-a9fe-6c9617bcdc2b"
+      ],
+      "description": "Segue apenas negociações criadas no funil de agendamento; outros eventos ou funis são ignorados"
+    },
+    {
+      "id": "158d479f-fc3b-4a0d-8453-468194736011",
+      "name": "Evitar duplicidade",
+      "nodeIds": [
+        "8e657891-017e-4d1a-9a3d-ec0d10290029",
+        "40f562e5-e822-4a13-b6e2-c13683486ba8",
+        "fa446d2e-499a-48f9-bd9f-2c4aad0f15d6"
+      ],
+      "description": "Ignora eventos já recebidos e registra os novos como recebidos para controle"
+    },
+    {
+      "id": "3887f6fc-8887-4e53-b981-39d4d5452393",
+      "name": "Publicar link na negociação",
+      "nodeIds": [
+        "0c6f4cd7-5a7e-482f-8e03-38d4030029fb",
+        "df3f68cc-4724-42f2-b5a7-f9da7e956c1c",
+        "6c6a13fc-9b15-4552-aa30-d1c73ac4ead7",
+        "c84092d8-3c48-49de-9e19-00ff63d2f4f3",
+        "10857a76-1614-41db-92f0-2b2d826b9493",
+        "5e1d6959-8784-42d2-951f-88377dd067b7",
+        "df22e9ec-b478-4f22-a917-ca02d6cf73a3",
+        "4802d935-e280-4c38-9d33-e01b0fe57b23",
+        "0795dffe-0d2a-47ba-9784-da417e5fd0d7",
+        "4c7bd649-a36b-426b-a8be-16ded7070cc3",
+        "92fea0c3-5ecb-4a00-a969-ad8af2e835ed",
+        "8580c35e-63c0-4ece-b483-613558a1bafd",
+        "a424e8ad-78e1-4143-afdc-840400bb2ce5",
+        "f506d392-42f9-4676-b405-f16d261c05aa",
+        "0560cb0d-e6c5-4c40-b713-e64905cb5049",
+        "cb425363-df38-45a2-88c0-261a74c930ee",
+        "99fbe5ec-c4d1-4425-91ea-5b552a08a676",
+        "d2afbf1a-0979-4bf3-9712-1210f77564b1"
+      ],
+      "description": "Lê a negociação na API V1, publica o link só se ele mudou, confirma no RD e registra concluído ou erro"
+    }
+  ]
+}

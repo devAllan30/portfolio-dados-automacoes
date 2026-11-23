@@ -29,6 +29,15 @@ da instalação devem ser configurados por variáveis de ambiente.
 - configuração do espaço como aberto para convidados com o link;
 - inclusão de um endereço de bot de transcrição definido no backend.
 
+### Publicação do link de pré-vendas
+
+- recebimento do evento de criação da negociação por webhook do RD Station;
+- validação do funil e prevenção de processamento duplicado;
+- publicação do link do formulário em um campo personalizado da negociação;
+- confirmação do valor gravado e tentativas controladas em caso de limite da
+  API;
+- workflow n8n público e sanitizado em [`n8n/`](n8n/).
+
 ## Tecnologias
 
 - TypeScript, React, Node.js e Vinext;
@@ -36,7 +45,7 @@ da instalação devem ser configurados por variáveis de ambiente.
 - APIs RD Station CRM V1 e V2;
 - Google Calendar API e Google Meet REST API;
 - OAuth 2.0 e conta de serviço com delegação em todo o domínio;
-- PM2 e proxy reverso Nginx para execução em servidor.
+- PM2 e proxy reverso Nginx ou IIS para execução em servidor.
 
 ## Configuração
 
