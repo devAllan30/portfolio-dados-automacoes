@@ -7,12 +7,14 @@ import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
   CircleEllipsis,
   Clock3,
   Copy,
   GraduationCap,
+  Handshake,
   Loader2,
   Mail,
   Phone,
@@ -44,10 +46,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { SstClientReferralForm } from "@/components/sst-client-referral-form";
 
 type Indicator = { id: string; name: string };
 type ScheduleOption = { value: string; label: string };
 type Ecosystem = "imersao" | "sst";
+type SstMode = "partner" | "client";
 type ConsultantOption = {
   key: string;
   name: string;
@@ -218,6 +222,7 @@ export default function Home({ consultantReference = "" }: { consultantReference
   const [status, setStatus] = useState<Status>({ type: "idle" });
   const [copiedDealId, setCopiedDealId] = useState<string | null>(null);
   const [ecosystem, setEcosystem] = useState<Ecosystem | null>(null);
+  const [sstMode, setSstMode] = useState<SstMode | null>(null);
   const [sstValues, setSstValues] = useState<SstFormValues>(initialSstValues);
   const [sstStatus, setSstStatus] = useState<SstStatus>({ type: "idle" });
   const [sstDateOptions, setSstDateOptions] = useState<ScheduleOption[]>([]);
@@ -349,10 +354,10 @@ export default function Home({ consultantReference = "" }: { consultantReference
   }, []);
 
   useEffect(() => {
-    if (ecosystem === "sst") {
+    if (ecosystem === "sst" && sstMode === "partner") {
       void Promise.resolve().then(loadSstDates);
     }
-  }, [ecosystem, loadSstDates]);
+  }, [ecosystem, loadSstDates, sstMode]);
 
   const createDeal = useCallback(async (submission: FormValues) => {
     setStatus({ type: "submitting" });
@@ -632,9 +637,16 @@ export default function Home({ consultantReference = "" }: { consultantReference
 
   function selectEcosystem(nextEcosystem: Ecosystem | null) {
     setEcosystem(nextEcosystem);
+    setSstMode(null);
     setStatus({ type: "idle" });
     setCopiedDealId(null);
     setSstStatus({ type: "idle" });
+  }
+
+  function selectSstMode(nextMode: SstMode | null) {
+    setSstMode(nextMode);
+    setSstStatus({ type: "idle" });
+    setSstScheduleMessage("");
   }
 
   return (
@@ -731,19 +743,79 @@ export default function Home({ consultantReference = "" }: { consultantReference
                 </span>
                 <div className="min-w-0">
                   <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[#8a7194]">Ecossistema selecionado</p>
-                  <p className="truncate font-bold text-[#351940]">{ecosystem === "imersao" ? "IMERSÃO" : "SST"}</p>
+                  <p className="truncate font-bold text-[#351940]">
+                    {ecosystem === "imersao"
+                      ? "IMERSÃO"
+                      : sstMode === "partner"
+                        ? "SST · INDICAÇÃO DE PARCEIROS"
+                        : sstMode === "client"
+                          ? "SST · INDICAÇÃO DE CLIENTE (B2C)"
+                          : "SST"}
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => selectEcosystem(null)}
+                onClick={() => {
+                  if (ecosystem === "sst" && sstMode) selectSstMode(null);
+                  else selectEcosystem(null);
+                }}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-[#622f7d] transition hover:bg-[#f4eef7]"
               >
-                <ArrowLeft className="size-4" /> Alterar
+                <ArrowLeft className="size-4" /> {ecosystem === "sst" && sstMode ? "Voltar" : "Alterar"}
               </button>
             </div>
 
-            {ecosystem === "sst" ? (
+            {ecosystem === "sst" && sstMode === null ? (
+              <div className="overflow-hidden rounded-[1.75rem] border border-[#c7dfcf] bg-white shadow-[0_28px_90px_rgba(23,111,55,0.10)]">
+                <div className="border-b border-[#e3eee7] bg-[linear-gradient(135deg,#fbfefc_0%,#eef8f1_100%)] px-5 py-7 text-center sm:px-8 sm:py-9">
+                  <span className="inline-flex items-center rounded-full border border-[#b8d9c3] bg-white px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#176f37]">
+                    SST · Etapa 2 de 2
+                  </span>
+                  <h1 className="mt-4 text-2xl font-bold tracking-tight text-[#24452f] sm:text-3xl">
+                    Qual tipo de indicação deseja enviar?
+                  </h1>
+                  <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#607568] sm:text-base">
+                    Escolha entre indicar um novo parceiro ou um cliente de um sócio.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-8">
+                  <button
+                    type="button"
+                    onClick={() => selectSstMode("partner")}
+                    className="group flex min-h-52 flex-col rounded-2xl border border-[#c7dfcf] bg-[#fbfefc] p-5 text-left transition hover:-translate-y-1 hover:border-[#25824b] hover:shadow-[0_16px_32px_rgba(23,111,55,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25824b] focus-visible:ring-offset-2"
+                  >
+                    <span className="grid size-11 place-items-center rounded-xl bg-[#e4f6e9] text-[#176f37] transition group-hover:bg-[#176f37] group-hover:text-white">
+                      <Handshake className="size-5" />
+                    </span>
+                    <span className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-[#6d8775]">SST- B2B</span>
+                    <span className="mt-1 text-xl font-bold text-[#24452f]">Indicação de parceiros</span>
+                    <span className="mt-2 text-sm leading-5 text-[#607568]">Acesse o formulário atual de agendamento e indicação de parceiros.</span>
+                    <span className="mt-auto pt-4 text-sm font-bold text-[#176f37]">Selecionar</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => selectSstMode("client")}
+                    className="group flex min-h-52 flex-col rounded-2xl border border-[#c7dfcf] bg-[#fbfefc] p-5 text-left transition hover:-translate-y-1 hover:border-[#25824b] hover:shadow-[0_16px_32px_rgba(23,111,55,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25824b] focus-visible:ring-offset-2"
+                  >
+                    <span className="grid size-11 place-items-center rounded-xl bg-[#e4f6e9] text-[#176f37] transition group-hover:bg-[#176f37] group-hover:text-white">
+                      <BriefcaseBusiness className="size-5" />
+                    </span>
+                    <span className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-[#6d8775]">SST · B2C</span>
+                    <span className="mt-1 text-xl font-bold text-[#24452f]">Indicação de cliente</span>
+                    <span className="mt-2 text-sm leading-5 text-[#607568]">Cadastre até 10 empresas clientes do mesmo grupo.</span>
+                    <span className="mt-auto pt-4 text-sm font-bold text-[#176f37]">Selecionar</span>
+                  </button>
+                </div>
+              </div>
+            ) : ecosystem === "sst" && sstMode === "client" ? (
+              <SstClientReferralForm
+                consultantReference={consultantReference}
+                consultantName={consultant?.name ?? ""}
+              />
+            ) : ecosystem === "sst" ? (
               <div className="mx-auto max-w-2xl rounded-[1.75rem] border border-[#c7dfcf] bg-white p-5 shadow-[0_28px_90px_rgba(23,111,55,0.10)] sm:p-8">
                 {sstStatus.type !== "success" && (
                   <div className="mb-6 border-b border-[#e3eee7] pb-5">

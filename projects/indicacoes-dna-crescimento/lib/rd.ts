@@ -1,3 +1,5 @@
+import { randomInt } from "node:crypto";
+
 const RD_API = "https://crm.rdstation.com/api/v1";
 
 export const SOURCE_PIPELINE_ID = "691497e81730fc001e0ab69c";
@@ -62,6 +64,44 @@ export async function rdRequest<T>(path: string, init?: RequestInit): Promise<T>
   }
 
   return payload as T;
+}
+
+type RdTeamUser = {
+  id?: string;
+  _id?: string;
+};
+
+type RdTeam = {
+  id?: string;
+  _id?: string;
+  team_users?: RdTeamUser[];
+};
+
+type RdTeamsResponse = {
+  teams?: RdTeam[];
+};
+
+export async function randomRdTeamUserId(teamId: string) {
+  const response = await rdRequest<RdTeamsResponse>("/teams");
+  const team = response.teams?.find(
+    (item) => (item.id ?? item._id) === teamId,
+  );
+  if (!team) {
+    throw new Error("A equipe de distribuição do SST B2C não foi encontrada no RD Station.");
+  }
+
+  const userIds = Array.from(
+    new Set(
+      (team.team_users ?? [])
+        .map((user) => user.id ?? user._id ?? "")
+        .filter((id) => /^[a-fA-F0-9]{24}$/.test(id)),
+    ),
+  );
+  if (!userIds.length) {
+    throw new Error("A equipe de distribuição do SST B2C não possui usuários disponíveis.");
+  }
+
+  return userIds[randomInt(userIds.length)];
 }
 
 export function publicRdError(error: unknown) {

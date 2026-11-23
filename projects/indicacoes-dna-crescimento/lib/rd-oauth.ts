@@ -58,6 +58,14 @@ export type RdTaskV2 = {
   owner_ids?: string[];
 };
 
+export type RdDealCustomFieldV2 = {
+  id: string;
+  slug: string;
+  entity: string;
+  type?: string;
+  options?: string[];
+};
+
 export class RdOAuthError extends Error {
   constructor(
     message: string,
@@ -311,6 +319,62 @@ export async function findLatestOrganizationDealInPipeline(
   });
 }
 
+export async function hasRdOrganizationDealInPipeline(
+  organizationId: string,
+  pipelineId: string,
+) {
+  const matches = await findRdOrganizationsWithDealsInPipeline(
+    [organizationId],
+    pipelineId,
+  );
+  return matches.has(organizationId);
+}
+
+export async function findRdOrganizationsWithDealsInPipeline(
+  organizationIds: string[],
+  pipelineId: string,
+) {
+  const ids = [...new Set(organizationIds.map((id) => id.trim()).filter(Boolean))];
+  const matches = new Set<string>();
+  if (!ids.length) return matches;
+
+  const token = await accessToken();
+  const checkOrganization = async (organizationId: string) => {
+    const parameters = new URLSearchParams({
+      filter: `organization_id:${organizationId} pipeline_id:${pipelineId}`,
+      sort: "-updated_at",
+      "page[number]": "1",
+      "page[size]": "1",
+    });
+    const response = await fetch(`${RD_CRM_V2_BASE_URL}/deals?${parameters}`, {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const result = (await response.json().catch(() => ({}))) as RdV2Response<
+      RdDealV2[]
+    >;
+    if (!response.ok || !Array.isArray(result.data)) {
+      throw new RdOAuthError(
+        `O RD Station recusou a verificação dos parceiros (${response.status}).`,
+        response.status,
+        JSON.stringify(result.errors ?? []).slice(0, 1000),
+      );
+    }
+    if (result.data.some((deal) => Boolean(deal.id))) {
+      matches.add(organizationId);
+    }
+  };
+
+  for (let index = 0; index < ids.length; index += 12) {
+    await Promise.all(ids.slice(index, index + 12).map(checkOrganization));
+  }
+  return matches;
+}
+
 export function getRdPipelineStage(pipelineId: string, stageId: string) {
   return rdV2Request<RdStageV2>(
     `/pipelines/${encodeURIComponent(pipelineId)}/stages/${encodeURIComponent(stageId)}`,
@@ -432,6 +496,98 @@ export async function createRdContact(data: {
   });
   if (!contact.id) throw new RdOAuthError("O RD não retornou o ID do contato criado.");
   return contact.id;
+}
+
+export async function createRdReferralContact(data: {
+  organizationId: string;
+  name: string;
+  phone: string;
+  email?: string;
+}) {
+  const contact = await rdV2Request<{ id?: string }>("/contacts", {
+    method: "POST",
+    body: JSON.stringify({
+      data: {
+        name: data.name,
+        organization_id: data.organizationId,
+        phones: [{ phone: data.phone, type: "mobile" }],
+        ...(data.email ? { emails: [{ email: data.email }] } : {}),
+      },
+    }),
+  });
+  if (!contact.id) throw new RdOAuthError("O RD não retornou o ID do contato criado.");
+  return contact.id;
+}
+
+export function getRdDealCustomField(fieldId: string) {
+  return rdV2Request<RdDealCustomFieldV2>(
+    `/custom_fields/${encodeURIComponent(fieldId)}`,
+    { method: "GET" },
+  );
+}
+
+export async function createRdClientReferralDeal(data: {
+  name: string;
+  organizationId: string;
+  contactId: string;
+  stageId: string;
+  campaignId: string;
+  teamId?: string;
+  responsibleId?: string;
+  customFields: Record<string, string | number>;
+}) {
+  const deal = await rdV2Request<RdDealV2>("/deals", {
+    method: "POST",
+    body: JSON.stringify({
+      data: {
+        name: data.name,
+        status: "ongoing",
+        stage_id: data.stageId,
+        campaign_id: data.campaignId,
+        organization_id: data.organizationId,
+        contact_ids: [data.contactId],
+        ...(data.responsibleId ? { owner_id: data.responsibleId } : {}),
+        ...(!data.responsibleId && data.teamId
+          ? {
+              distribution_settings: {
+                stage_id: data.stageId,
+                rule: { type: "team", id: data.teamId },
+              },
+            }
+          : {}),
+        custom_fields: data.customFields,
+      },
+    }),
+  });
+  if (!deal.id) throw new RdOAuthError("O RD não retornou o ID da negociação criada.");
+  return deal;
+}
+
+export async function waitForRdDealOwner(dealId: string) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const deal = await rdV2Request<RdDealV2>(
+      `/deals/${encodeURIComponent(dealId)}`,
+      { method: "GET" },
+    );
+    const ownerId = String(deal.owner_id || "").trim();
+    if (ownerId) return ownerId;
+    if (attempt < 7) {
+      await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+    }
+  }
+  throw new RdOAuthError(
+    "O RD não confirmou o responsável da primeira negociação do grupo.",
+  );
+}
+
+export function createRdDealNote(dealId: string, description: string) {
+  return rdV2Request<{ id?: string }>(
+    `/deals/${encodeURIComponent(dealId)}/notes`,
+    {
+      method: "POST",
+      body: JSON.stringify({ data: { description } }),
+    },
+  );
 }
 
 export async function createRdSstDeal(data: {
